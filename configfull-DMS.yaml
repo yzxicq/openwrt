@@ -36,6 +36,8 @@ allow-lan: true
 unified-delay: true
 tcp-concurrent: true
 # interface-name: eth0  （路由器下根据情况指定出站接口）
+interface-name: eth0
+bind-address: '192.168.10.2'
 authentication:
 #  密码设置选项默认无
 - ""
