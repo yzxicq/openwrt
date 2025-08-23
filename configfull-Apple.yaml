@@ -49,18 +49,18 @@ geodata-loader: standard
 geo-auto-update: true
 geo-update-interval: 48
 geox-url:
-  geosite: "https://gh-proxy.com/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
-  mmdb: "https://gh-proxy.com/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.metadb"
-  geoip: "https://gh-proxy.com/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat"
-  asn: "https://gh-proxy.com/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"
+  geosite: "https://github.doppelmayr.cc/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
+  mmdb: "https://github.doppelmayr.cc/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.metadb"
+  geoip: "https://github.doppelmayr.cc/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat"
+  asn: "https://github.doppelmayr.cc/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"
 
 # 控制面板
 external-controller: 0.0.0.0:9090
 secret: ""
 #  密码设置选项默认无
 external-ui: ui
-external-ui-url: "https://gh-proxy.com/https://github.com/Zephyruso/zashboard/archive/refs/heads/gh-pages.zip"
-# 下载面板地址可更换：https://gh-proxy.com/https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip
+external-ui-url: "https://github.doppelmayr.cc/https://github.com/Zephyruso/zashboard/archive/refs/heads/gh-pages.zip"
+# 下载面板地址可更换：https://github.doppelmayr.cc/https://github.com/MetaCubeX/metacubexd/archive/refs/heads/gh-pages.zip
 
 # 匹配进程 always/strict/off
 find-process-mode: strict
