@@ -3,7 +3,7 @@ name: Update GeoX files
 on:
   schedule:
     - cron: '0 2 * * *'  # 每天 UTC 2 点自动执行
-  workflow_dispatch:      # 支持手动触发
+  workflow_dispatch:
 
 jobs:
   update-geox:
@@ -20,13 +20,13 @@ jobs:
 
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
+          pip install --upgrade pip
           pip install requests
 
-      - name: Create Python script
+      - name: Download GeoX files
         run: |
-          mkdir -p scripts
-          cat > scripts/update_geox.py << 'EOF'
+          mkdir -p geox
+          python3 - <<PYTHON
 import requests
 import os
 import shutil
@@ -45,25 +45,22 @@ rename_map = {
     "geoip-lite.dat": "GeoIP.dat"
 }
 
-for target_name, url in files.items():
-    print(f"Downloading {url} -> geox/{target_name}")
+for name, url in files.items():
+    print(f"Downloading {url}")
     r = requests.get(url, timeout=60)
     r.raise_for_status()
-    raw_filename = url.split("/")[-1]
-    raw_path = os.path.join("geox", raw_filename)
-    with open(raw_path, "wb") as f_out:
-        f_out.write(r.content)
-    if raw_filename.lower() in rename_map:
-        new_name = rename_map[raw_filename.lower()]
+    raw_file = url.split("/")[-1]
+    raw_path = os.path.join("geox", raw_file)
+    with open(raw_path, "wb") as f:
+        f.write(r.content)
+    if raw_file.lower() in rename_map:
+        new_name = rename_map[raw_file.lower()]
         new_path = os.path.join("geox", new_name)
         shutil.copy2(raw_path, new_path)
         print(f"Copied {raw_path} -> {new_path}")
-EOF
+PYTHON
 
-      - name: Run Python script
-        run: python3 scripts/update_geox.py
-
-      - name: Commit & Push changes
+      - name: Commit & Push
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
