@@ -24,10 +24,10 @@ jobs:
           pip install requests
 
       - name: Download GeoX files
-        run: |
-          mkdir -p geox
-          python3 - << 'EOF'
+        run: python3 - <<'EOF'
 import requests, os, shutil
+
+os.makedirs("geox", exist_ok=True)
 
 files = {
     "GeoSite.dat": "https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat",
@@ -49,7 +49,6 @@ for target_name, url in files.items():
     raw_path = os.path.join("geox", raw_filename)
     with open(raw_path, "wb") as f_out:
         f_out.write(r.content)
-    # 如果需要改名，生成 Nikki 兼容文件
     if raw_filename.lower() in rename_map:
         new_name = rename_map[raw_filename.lower()]
         new_path = os.path.join("geox", new_name)
