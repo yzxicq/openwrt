@@ -1,42 +1,36 @@
-name: Update GeoX files
+name: Update GeoX
 
 on:
   schedule:
-    - cron: '0 2 * * *'  # 每天 UTC 2 点自动执行
-  workflow_dispatch:      # 支持手动触发
+    - cron: "0 0 * * *" # 每天执行一次
+  workflow_dispatch:
+
+permissions:
+  contents: write   # ✅ 必须添加，否则 403
 
 jobs:
   update-geox:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          persist-credentials: true  # 允许 workflow 推送回仓库
+          token: ${{ secrets.GITHUB_TOKEN }}  # 默认内置的 token
 
-      - name: Create geox directory
-        run: mkdir -p geox
-
-      - name: Download GeoX files and generate Nikki-compatible names
+      - name: Download GeoX files
         run: |
-          set -e
-          cd geox
-          # 下载原始文件
-          wget -O geosite.dat https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat
-          wget -O geoip-lite.dat https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat
-          wget -O geoip-lite.metadb https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.metadb
-          wget -O GeoLite2-ASN.mmdb https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb
-          # 生成 Nikki 兼容文件（大小写）
-          cp geosite.dat GeoSite.dat
-          cp geoip-lite.dat GeoIP.dat
+          mkdir -p geox
+          curl -L -o geox/GeoIP.dat https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat
+          curl -L -o geox/GeoSite.dat https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat
+          curl -L -o geox/GeoLite2-ASN.mmdb https://github.com/Loyalsoldier/geoip/releases/latest/download/GeoLite2-ASN.mmdb
+          curl -L -o geox/geoip-lite.dat https://github.com/MetaCubeX/meta-rules-dat/releases/latest/download/geoip-lite.dat
+          curl -L -o geox/geoip-lite.metadb https://github.com/MetaCubeX/meta-rules-dat/releases/latest/download/geoip-lite.metadb
+          curl -L -o geox/geosite.dat https://github.com/MetaCubeX/meta-rules-dat/releases/latest/download/geosite.dat
 
-      - name: Commit & Push changes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Commit and push changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add geox/
+          git add geox/*
           git commit -m "Update GeoX files" || echo "No changes to commit"
           git push
