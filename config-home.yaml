@@ -52,9 +52,9 @@ geo-auto-update: true
 geo-update-interval: 48
 geox-url:
   geosite: "https://github.doppelmayr.cc/https://raw.githubusercontent.com/yzxicq/openwrt/main/geox/GeoIP.dat"
-  mmdb: "https://github.doppelmayr.cc/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.metadb"
-  geoip: "https://github.doppelmayr.cc/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat"
-  asn: "https://github.doppelmayr.cc/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"
+  mmdb: "https://github.doppelmayr.cc/https://raw.githubusercontent.com/yzxicq/openwrt/main/geox/geoip-lite.metadb"
+  geoip: "https://github.doppelmayr.cc/https://raw.githubusercontent.com/yzxicq/openwrt/main/geox/geoip-lite.dat"
+  asn: "https://github.doppelmayr.cc/https://raw.githubusercontent.com/yzxicq/openwrt/main/geox/GeoLite2-ASN.mmdb"
 
 # 控制面板
 external-controller: 0.0.0.0:9090
