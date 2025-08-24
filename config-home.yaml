@@ -51,7 +51,7 @@ geodata-loader: standard
 geo-auto-update: true
 geo-update-interval: 48
 geox-url:
-  geosite: "https://github.doppelmayr.cc/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geosite.dat"
+  geosite: "https://github.doppelmayr.cc/https://raw.githubusercontent.com/yzxicq/openwrt/main/geox/GeoIP.dat"
   mmdb: "https://github.doppelmayr.cc/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.metadb"
   geoip: "https://github.doppelmayr.cc/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.dat"
   asn: "https://github.doppelmayr.cc/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"
