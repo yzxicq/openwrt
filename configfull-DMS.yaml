@@ -89,6 +89,8 @@ sniffer:
   force-domain:
     - "*.v2ex.com"
   skip-domain:
+    - "*.doppelmayr.cn"
+    - "*.doppelmayr.local"
     - "Mijia Cloud"
     - "dlg.io.mi.com"
     - "*.push.apple.com"
@@ -101,8 +103,6 @@ sniffer:
     # 向日葵服务
     - "*.oray.com"
     - "*.sunlogin.net"
-    - "*.doppelmayr.cn"
-    - "*.doppelmayr.local"
 # 代理模式
 tun:
   enable: true
@@ -131,11 +131,11 @@ dns:
   # 黑名单模式表示如果匹配成功则不返回 Fake-IP, 白名单模式时只有匹配成功才返回 Fake-IP
   fake-ip-filter-mode: blacklist
   fake-ip-filter:
-    - "rule-set:fakeip_filter_domain"
     - "*.doppelmayr.local"
     - "*.doppelmayr.cn"
     - "doppelmayr.local"
     - "10.*"
+    - "rule-set:fakeip_filter_domain"
     - "internetbeacon.msedge.net"
     - "rule-set:game_cn_domain"
     - "rule-set:bank_cn_domain"
@@ -280,6 +280,9 @@ rules:
   - DST-PORT,593,DIRECT       # RPC over HTTP
   - DST-PORT,3268,DIRECT      # 全局编录（GC）
   - DST-PORT,3269,DIRECT      # 全局编录 (SSL)
+  - DST-PORT,3389,DIRECT      # 如果需要远程桌面
+  - DST-PORT,5985,DIRECT      # WinRM HTTP
+  - DST-PORT,5986,DIRECT      # WinRM HTTPS
 
 # --- 第三方规则集 ---
   - RULE-SET,banAd_domain,隐私拦截
