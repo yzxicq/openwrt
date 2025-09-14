@@ -263,16 +263,13 @@ rules:
 #  - IP-CIDR,10.19.80.0/24,DIRECT    # GuestWiFi (如要翻墙请删除此行)
 #  - IP-CIDR,10.19.90.0/24,DIRECT    # VPN
 
-# --- 内网域名直连 (确保 AD、Exchange 正常工作) ---
-  - DOMAIN-SUFFIX,doppelmayr.local,DIRECT
-  - DOMAIN-SUFFIX,doppelmayr.cn,DIRECT
-  - DOMAIN-SUFFIX,lan,DIRECT
-  - DOMAIN-SUFFIX,local,DIRECT
 # --- 域控关键端口直连 (AD/Kerberos/LDAP/SMB 等) ---
   - DST-PORT,53,DIRECT        # DNS 查询（指向域控）
   - DST-PORT,88,DIRECT        # Kerberos 认证
   - DST-PORT,123,DIRECT       # NTP 时间同步  
   - DST-PORT,135,DIRECT       # RPC Endpoint Mapper
+  - DST-PORT,137,DIRECT       # PDQ
+  - DST-PORT,138,DIRECT       # PDQ
   - DST-PORT,139,DIRECT       # NetBIOS
   - DST-PORT,389,DIRECT       # LDAP
   - DST-PORT,445,DIRECT       # SMB 文件共享
@@ -283,7 +280,15 @@ rules:
   - DST-PORT,3389,DIRECT      # 如果需要远程桌面
   - DST-PORT,5985,DIRECT      # WinRM HTTP
   - DST-PORT,5986,DIRECT      # WinRM HTTPS
-
+  # Central Server（如果启用）
+  - DST-PORT,6336,DIRECT
+  - DST-PORT,7337,DIRECT
+  - ICMP,ANY,DIRECT # Ping
+# --- 内网域名直连 (确保 AD、Exchange 正常工作) ---
+  - DOMAIN-SUFFIX,doppelmayr.local,DIRECT
+  - DOMAIN-SUFFIX,doppelmayr.cn,DIRECT
+  - DOMAIN-SUFFIX,lan,DIRECT
+  - DOMAIN-SUFFIX,local,DIRECT
 # --- 第三方规则集 ---
   - RULE-SET,banAd_domain,隐私拦截
   - RULE-SET,wechat_domain,全球直连
