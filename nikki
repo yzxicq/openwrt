@@ -1,22 +1,28 @@
-
 config status 'status'
 
 config config 'config'
 	option enabled '1'
-	option profile 'file:configfull-DMS.yaml'
+	option profile 'file:config-home.yaml'
 	option start_delay '0'
 	option scheduled_restart '0'
 	option cron_expression '0 3 * * *'
 	option test_profile '1'
 	option core_only '0'
 
+# ========================
+#     系统环境（Hy2 必改）
+# ========================
 config procd 'procd'
 	option fast_reload '1'
 	option env_disable_loopback_detector '0'
+	# Hy2 / TUIC 必须禁用 GSO 否则断流
 	option env_disable_quic_go_gso '1'
 	option env_disable_quic_go_ecn '1'
-	option env_skip_system_ipv6_check '0'
+	option env_skip_system_ipv6_check '1'
 
+# ========================
+#      Nikki 主体配置
+# ========================
 config mixin 'mixin'
 	option log_level 'warning'
 	option mode 'rule'
@@ -26,104 +32,171 @@ config mixin 'mixin'
 	option api_listen '[::]:9090'
 	option selection_cache '1'
 	option allow_lan '1'
+
+	# 入站端口
 	option http_port '8080'
 	option socks_port '1080'
 	option mixed_port '7890'
 	option redir_port '7891'
 	option tproxy_port '7892'
 	option authentication '1'
+
+	# ========================
+	#       TUN（核心）
+	# ========================
 	option tun_enabled '1'
 	option tun_device 'nikki'
-	option tun_stack 'system'
-	option tun_dns_hijack '0'
+	# 【旁路由最佳】mixed 支持内核与用户态混合，Hy2 最稳
+	option tun_stack 'mixed'
+	option tun_dns_hijack '1'
 	list tun_dns_hijacks 'tcp://any:53'
 	list tun_dns_hijacks 'udp://any:53'
+	option auto_route '1'
+	option auto_redirect '0'
+
+	# ========================
+	#         DNS
+	# ========================
 	option dns_enabled '1'
 	option dns_listen '[::]:1053'
-	option dns_ipv6 '1'
+	option dns_ipv6 '0'
 	option dns_mode 'fake-ip'
 	option fake_ip_range '198.18.0.1/16'
-	option fake_ip_filter '0'
+	option fake_ip_cache '1'
+	option dns_respect_rules '1'
+	option dns_system_hosts '1'
+	option dns_hosts '1'
+
+	# Fake-IP 黑名单（旁路由必备）
+	option fake_ip_filter '1'
+	option fake_ip_filter_mode 'blacklist'
 	list fake_ip_filters '+.lan'
 	list fake_ip_filters '+.local'
-	option fake_ip_cache '1'
-	option hosts '0'
-	option dns_nameserver '1'
-	option dns_nameserver_policy '0'
-	option sniffer_force_domain_name '0'
+	list fake_ip_filters '+.home.arpa'
+	list fake_ip_filters '+.msftncsi.com'
+	list fake_ip_filters '+.msftconnecttest.com'
+	list fake_ip_filters '+.pool.ntp.org'
+	list fake_ip_filters 'ntp.*'
+	list fake_ip_filters 'time.*'
+	list fake_ip_filters '+.stun.*'
+	list fake_ip_filters '+.dns.google'
+
+	# ========================
+	#     流量嗅探（建议开启）
+	# ========================
+	option sniffer_sniff '1'
+	option sniffer_force_domain_name '1'
 	option sniffer_ignore_domain_name '0'
-	option sniffer_sniff '0'
+
+	# ========================
+	#        Geo 资源
+	# ========================
 	option rule '0'
 	option rule_provider '0'
 	option mixin_file_content '0'
 	option ui_path 'ui'
 	option api_secret '42716'
+
 	option geoip_format 'dat'
 	option geosite_url 'https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat'
 	option geoip_mmdb_url 'https://gh-proxy.com/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.metadb'
 	option geoip_asn_url 'https://gh-proxy.com/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb'
+	option geoip_dat_url 'https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat'
 	option geox_auto_update '1'
 	option geodata_loader 'standard'
+	option geox_update_interval '24'
+
+	# TCP 优化
 	option unify_delay '1'
 	option tcp_concurrent '1'
 	option tcp_keep_alive_idle '600'
 	option tcp_keep_alive_interval '15'
 	option disable_tcp_keep_alive '0'
-	option fake_ip_filter_mode 'blacklist'
-	option geoip_dat_url 'https://testingcf.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat'
-	option geox_update_interval '24'
-	option dns_system_hosts '1'
-	option dns_hosts '1'
 
+# ========================
+#   登录认证
+# ========================
 config authentication
 	option enabled '1'
 	option username 'nikki'
 	option password '42716'
 
+# ========================
+#   hosts 可不动
+# ========================
 config hosts
 	option enabled '0'
 	option domain_name 'localhost'
 	list ip '127.0.0.1'
 	list ip '::1'
 
-config nameserver
+# ========================
+#        全 TUN 入站
+# ========================
+config proxy 'proxy'
 	option enabled '1'
-	option type 'default-nameserver'
-	list nameserver '180.184.1.1'
-	list nameserver '223.5.5.5'
-	list nameserver '119.29.29.29'
+	option tcp_mode 'tun'
+	option udp_mode 'tun'
 
-config nameserver
+	option ipv4_dns_hijack '1'
+	option ipv6_dns_hijack '1'
+	option ipv4_proxy '1'
+	option ipv6_proxy '0'    # 禁用 IPv6
+	option fake_ip_ping_hijack '1'
+	option router_proxy '1'
+	option lan_proxy '1'
+	list lan_inbound_interface 'lan'
+
+	# 保留网段（默认）
+	list reserved_ip '0.0.0.0/8'
+	list reserved_ip '10.0.0.0/8'
+	list reserved_ip '127.0.0.0/8'
+	list reserved_ip '100.64.0.0/10'
+	list reserved_ip '169.254.0.0/16'
+	list reserved_ip '172.16.0.0/12'
+	list reserved_ip '192.168.0.0/16'
+	list reserved_ip '224.0.0.0/4'
+	list reserved_ip '240.0.0.0/4'
+
+	list reserved_ip6 '::/128'
+	list reserved_ip6 '::1/128'
+	list reserved_ip6 '::ffff:0:0/96'
+	list reserved_ip6 '100::/64'
+	list reserved_ip6 '64:ff9b::/96'
+	list reserved_ip6 '2001::/32'
+	list reserved_ip6 '2001:10::/28'
+	list reserved_ip6 '2001:20::/28'
+	list reserved_ip6 '2001:db8::/32'
+	list reserved_ip6 '2002::/16'
+	list reserved_ip6 'fc00::/7'
+	list reserved_ip6 'fe80::/10'
+	list reserved_ip6 'ff00::/8'
+
+	# Fake-IP 必须关闭此项，否则分流冲突
+	option bypass_china_mainland_ip '0'
+	option bypass_china_mainland_ip6 '0'
+
+	option proxy_tcp_dport '0-65535'
+	option proxy_udp_dport '0-65535'
+	option tun_timeout '30'
+	option tun_interval '10'
+
+# ========================
+#    路由与访问控制
+# ========================
+config router_access_control
 	option enabled '1'
-	option type 'proxy-server-nameserver'
-	list nameserver 'https://223.5.5.5/dns-query'
-	list nameserver 'https://223.6.6.6/dns-query'
-	list nameserver 'https://doh.pub/dns-query'
+	option dns '1'
+	option proxy '1'
 
-config nameserver
+config lan_access_control
 	option enabled '1'
-	option type 'direct-nameserver'
-	list nameserver 'https://223.5.5.5/dns-query'
-	list nameserver 'https://223.6.6.6/dns-query'
+	option dns '1'
+	option proxy '1'
 
-config nameserver
-	option enabled '1'
-	option type 'nameserver'
-	list nameserver 'https://dns.google/dns-query'
-	list nameserver 'https://dns.cloudflare.com/dns-query'
-
-config nameserver_policy
-	option enabled '1'
-	option matcher 'geosite:private,cn'
-	list nameserver 'https://223.5.5.5/dns-query'
-	list nameserver 'https://223.6.6.6/dns-query'
-
-config nameserver_policy
-	option enabled '1'
-	option matcher 'geosite:geolocation-!cn'
-	list nameserver 'https://1.1.1.1/dns-query'
-	list nameserver 'https://8.8.8.8/dns-query'
-
+# ========================
+#        嗅探规则
+# ========================
 config sniff
 	option enabled '1'
 	option protocol 'HTTP'
@@ -145,83 +218,9 @@ config sniff
 	list port '8443'
 	option overwrite_destination '1'
 
-config proxy 'proxy'
-	option enabled '1'
-	option tcp_mode 'redirect'
-	option udp_mode 'tun'
-	option ipv4_dns_hijack '1'
-	option ipv6_dns_hijack '1'
-	option ipv4_proxy '1'
-	option ipv6_proxy '1'
-	option fake_ip_ping_hijack '1'
-	option router_proxy '1'
-	option lan_proxy '1'
-	list lan_inbound_interface 'lan'
-	list reserved_ip '0.0.0.0/8'
-	list reserved_ip '10.0.0.0/8'
-	list reserved_ip '127.0.0.0/8'
-	list reserved_ip '100.64.0.0/10'
-	list reserved_ip '169.254.0.0/16'
-	list reserved_ip '172.16.0.0/12'
-	list reserved_ip '192.168.0.0/16'
-	list reserved_ip '224.0.0.0/4'
-	list reserved_ip '240.0.0.0/4'
-	list reserved_ip6 '::/128'
-	list reserved_ip6 '::1/128'
-	list reserved_ip6 '::ffff:0:0/96'
-	list reserved_ip6 '100::/64'
-	list reserved_ip6 '64:ff9b::/96'
-	list reserved_ip6 '2001::/32'
-	list reserved_ip6 '2001:10::/28'
-	list reserved_ip6 '2001:20::/28'
-	list reserved_ip6 '2001:db8::/32'
-	list reserved_ip6 '2002::/16'
-	list reserved_ip6 'fc00::/7'
-	list reserved_ip6 'fe80::/10'
-	list reserved_ip6 'ff00::/8'
-	list bypass_dscp '4'
-	option bypass_china_mainland_ip '0'
-	option bypass_china_mainland_ip6 '0'
-	option proxy_tcp_dport '0-65535'
-	option proxy_udp_dport '0-65535'
-	option tun_timeout '30'
-	option tun_interval '1'
-
-config router_access_control
-	option enabled '1'
-	list user 'dnsmasq'
-	list user 'ftp'
-	list user 'logd'
-	list user 'nobody'
-	list user 'ntp'
-	list user 'ubus'
-	list group 'dnsmasq'
-	list group 'ftp'
-	list group 'logd'
-	list group 'nogroup'
-	list group 'ntp'
-	list group 'ubus'
-	list cgroup 'services/adguardhome'
-	list cgroup 'services/aria2'
-	list cgroup 'services/dnsmasq'
-	list cgroup 'services/netbird'
-	list cgroup 'services/qbittorrent'
-	list cgroup 'services/sysntpd'
-	list cgroup 'services/tailscale'
-	list cgroup 'services/zerotier'
-	option proxy '0'
-	option dns '0'
-
-config router_access_control
-	option enabled '1'
-	option dns '1'
-	option proxy '1'
-
-config lan_access_control
-	option enabled '1'
-	option dns '1'
-	option proxy '1'
-
+# ========================
+# RFC 路由表配置
+# ========================
 config routing 'routing'
 	option tproxy_fw_mark '0x80'
 	option tproxy_fw_mask '0xFF'
@@ -235,11 +234,4 @@ config routing 'routing'
 	option cgroup_name 'nikki'
 
 config editor 'editor'
-
 config log 'log'
-
-config authentication
-	option enabled '1'
-	option username 'Clash'
-	option password '77499981'
-

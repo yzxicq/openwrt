@@ -247,12 +247,13 @@ proxy-groups:
   - {name: 故障转移, type: fallback, include-all: true, proxies: [香港节点, 新加坡节点, 日本节点, 台湾节点, 美国节点, 欧洲节点, 自建/家宽节点], interval: 300, exclude-filter: "(?i)(🟢 直连)", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/fallback.png"}
   - {name: GLOBAL, type: select, include-all: true , proxies: [节点选择, YouTube, GoogleVPN, FCM, Google, Meta, AI, GitHub, OneDrive, Microsoft, Telegram, Discord, Talkatone, LINE, Signal, TikTok, NETFLIX, DisneyPlus, HBO, Primevideo, AppleTV, Apple, Emby, 哔哩哔哩, 哔哩东南亚, 巴哈姆特, Spotify, 国内媒体, Global-TV, Global-Medial, 游戏平台, Speedtest, PayPal, Wise, 国外电商, STEAM, 全球直连, 隐私拦截, Final, 自建/家宽节点, 香港节点, 新加坡节点, 日本节点, 台湾节点, 美国节点, 欧洲节点, 全部节点, 香港自动, 新加坡自动, 日本自动, 台湾自动, 美国自动, 香港均衡, 新加坡均衡, 日本均衡, 台湾均衡, 美国均衡, 故障转移], exclude-filter: "(?i)(🟢 直连)", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/global.png"}
 rules: 
+#Clash/Nikki 的直连/代理判断顺序大致如下：
+# 1.DOMAIN → 域名匹配
+# 2.IP-CIDR → IP 匹配
+# 3.DST-PORT → 端口匹配（有些规则依赖端口）
+# 4.MATCH → 默认策略（通常是 FINAL 组）
+# 5.匹配是从上到下顺序执行，第一条匹配到的规则生效，后续规则不再匹配。
 # --- 内网 VLAN 直连 ---
-  - IP-CIDR,10.19.0.8/32,DIRECT
-  - IP-CIDR,10.19.0.15/32,DIRECT
-  - IP-CIDR,10.19.0.0/16,DIRECT
-  - IP-CIDR,224.0.0.0/4,DIRECT       # 多播
-  - IP-CIDR,255.255.255.255/32,DIRECT # 广播
 #  - IP-CIDR,10.19.0.0/24,DIRECT     # ServerNet (包含域控、Exchange)
 #  - IP-CIDR,10.19.9.0/24,DIRECT     # Management (防火墙、交换机等)
 #  - IP-CIDR,10.19.10.0/24,DIRECT    # FW VLAN
@@ -265,39 +266,26 @@ rules:
 #  - IP-CIDR,10.19.80.0/24,DIRECT    # GuestWiFi (如要翻墙请删除此行)
 #  - IP-CIDR,10.19.90.0/24,DIRECT    # VPN
 
-# --- 域控关键端口直连 (AD/Kerberos/LDAP/SMB 等) ---
-  - DST-PORT,53,DIRECT        # DNS 查询（指向域控）
-  - DST-PORT,88,DIRECT        # Kerberos 认证
-  - DST-PORT,123,DIRECT       # NTP 时间同步  
-  - DST-PORT,135,DIRECT       # RPC Endpoint Mapper
-  - DST-PORT,137,DIRECT       # PDQ
-  - DST-PORT,138,DIRECT       # PDQ
-  - DST-PORT,139,DIRECT       # NetBIOS
-  - DST-PORT,389,DIRECT       # LDAP
-  - DST-PORT,445,DIRECT       # SMB 文件共享
-  - DST-PORT,464,DIRECT       # Kerberos 改密
-  - DST-PORT,515,DIRECT
-  - DST-PORT,593,DIRECT       # RPC over HTTP
-  - DST-PORT,1900,DIRECT       # SSDP 发现
-  - DST-PORT,3268,DIRECT      # 全局编录（GC）
-  - DST-PORT,3269,DIRECT      # 全局编录 (SSL)
-  - DST-PORT,3389,DIRECT      # 如果需要远程桌面
-  - DST-PORT,3702,DIRECT      # WSD
-  - DST-PORT,5985,DIRECT      # WinRM HTTP
-  - DST-PORT,5986,DIRECT      # WinRM HTTPS
-  - DST-PORT,9100,DIRECT
-  - DST-PORT,5353,DIRECT       # mDNS（部分打印机需要）
-  # Central Server（如果启用）
-  - DST-PORT,6336,DIRECT
-  - DST-PORT,7337,DIRECT
-# 3. RPC 动态端口范围 (Windows Server 2008 R2 及更高版本的默认动态端口范围)
-  - DST-PORT,49152-65535,DIRECT
-#  - ICMP,ANY,DIRECT # Ping
+# --- 内网 VLAN 直连 ---
+- IP-CIDR,10.19.0.0/16,DIRECT        # 公司内网总网段
+- IP-CIDR,224.0.0.0/4,DIRECT        # 多播
+- IP-CIDR,255.255.255.255/32,DIRECT # 广播
+
 # --- 内网域名直连 (确保 AD、Exchange 正常工作) ---
-  - DOMAIN-SUFFIX,doppelmayr.local,DIRECT
-  - DOMAIN-SUFFIX,doppelmayr.cn,DIRECT
-  - DOMAIN-SUFFIX,lan,DIRECT
-  - DOMAIN-SUFFIX,local,DIRECT
+- DOMAIN-SUFFIX,doppelmayr.local,DIRECT
+- DOMAIN-SUFFIX,doppelmayr.cn,DIRECT
+- DOMAIN-SUFFIX,lan,DIRECT
+- DOMAIN-SUFFIX,local,DIRECT
+
+# --- 核心服务端口直连 ---
+- DST-PORT,53,DIRECT        # DNS 查询（指向域控）
+- DST-PORT,88,DIRECT        # Kerberos 认证
+- DST-PORT,389,DIRECT       # LDAP
+- DST-PORT,445,DIRECT       # SMB 文件共享
+- DST-PORT,3268,DIRECT      # 全局编录（GC）
+- DST-PORT,3269,DIRECT      # 全局编录 SSL
+- DST-PORT,3389,DIRECT      # 远程桌面（可选）
+
 # --- 第三方规则集 ---
   - RULE-SET,banAd_domain,隐私拦截
   - RULE-SET,wechat_domain,全球直连
