@@ -9,7 +9,7 @@ proxy-providers:
   Subscribe:
     <<: *PProviders
     proxy: "🟢 直连"
-    url: "https://sub.doppelmayr.cc/share/file/Nikki-DMS?token=uFzmfofALVTPI0AFKZ1yt"
+    url: ""
     override:
       additional-prefix: ''
       skip-cert-verify: true
