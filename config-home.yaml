@@ -38,7 +38,7 @@ skip-auth-prefixes:
 - 127.0.0.1/8
 - ::1/128
 
-geodata-mode: false
+geodata-mode: true
 # GEO 文件加载模式（standard：标准加载器/memconservative：专为内存受限 (小内存) 设备优化的加载器 (默认值)）
 geodata-loader: standard
 geo-auto-update: true
@@ -102,7 +102,7 @@ sniffer:
 # 代理模式
 tun:
   enable: true
-  stack: gvisor
+  stack: system
   mtu: 9000
   dns-hijack:
     - "any:53"
@@ -116,7 +116,7 @@ dns:
   enable: true
   listen: 0.0.0.0:1053
   ipv6: true
-  prefer-h3: false # 是否开启 DoH 支持 HTTP/3，将并发尝试
+  prefer-h3: true # 是否开启 DoH 支持 HTTP/3，将并发尝试
   respect-rules: true
   # 模式切换 redir-host / fake-ip
   enhanced-mode: fake-ip
