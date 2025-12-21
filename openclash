@@ -125,7 +125,7 @@ config dns_servers
 
 config dns_servers
 	option type 'udp'
-	option ip '119.29.29.29'
+	option ip '180.184.1.1'
 	option enabled '1'
 	option group 'default'
 	option disable_ipv6 '0'
@@ -154,7 +154,7 @@ config dns_servers
 config dns_servers
 	option group 'nameserver'
 	option type 'udp'
-	option ip '119.28.28.28'
+	option ip '180.184.2.2'
 	option enabled '0'
 	option disable_ipv6 '0'
 
