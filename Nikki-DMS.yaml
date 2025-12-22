@@ -105,8 +105,8 @@ dns:
   enable: true
   listen: 0.0.0.0:1053
   ipv6: false
-  prefer-h3: true # 是否开启 DoH 支持 HTTP/3，将并发尝试
-  respect-rules: true
+  prefer-h3: false # 是否开启 DoH 支持 HTTP/3，将并发尝试
+  respect-rules: false
   # 模式切换 redir-host / fake-ip
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
