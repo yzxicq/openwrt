@@ -14,7 +14,7 @@ proxy-providers:
   Subscribe:
     <<: *PProviders
     proxy: "🟢 直连"
-    url: "https://sub.doppelmayr.cc/Doppelmayr1391044116/download/collection/Jason?target=ClashMeta"
+    url: ""
     override:
       additional-prefix: ''
       skip-cert-verify: true
@@ -26,7 +26,7 @@ global-ua: clash.meta
 
 # 全局配置
 mixed-port: 7890
-ipv6: true
+ipv6: false
 allow-lan: true
 unified-delay: true
 tcp-concurrent: true
@@ -40,7 +40,7 @@ skip-auth-prefixes:
 
 geodata-mode: true
 # GEO 文件加载模式（standard：标准加载器/memconservative：专为内存受限 (小内存) 设备优化的加载器 (默认值)）
-geodata-loader: memconservative
+geodata-loader: standard
 geo-auto-update: true
 geo-update-interval: 48
 geox-url:
@@ -76,8 +76,8 @@ sniffer:
       override-destination: true
     TLS:
       ports: [443, 8443]
-#    QUIC:
-#      ports: [443, 8443]
+    QUIC:
+      ports: [443, 8443]
   force-domain:
     - "*.v2ex.com"
   skip-domain:
@@ -110,12 +110,12 @@ tun:
 dns:
   enable: true
   listen: 0.0.0.0:1053
-  ipv6: true
+  ipv6: false
   prefer-h3: false # 是否开启 DoH 支持 HTTP/3，将并发尝试
   respect-rules: true
   # 模式切换 redir-host / fake-ip
   enhanced-mode: fake-ip
-  fake-ip-range: 28.0.0.1/8
+  fake-ip-range: 198.18.0.1/16
   # 模式切换 whitelist/blacklist 
   # 黑名单模式表示如果匹配成功则不返回 Fake-IP, 白名单模式时只有匹配成功才返回 Fake-IP
   fake-ip-filter-mode: blacklist
