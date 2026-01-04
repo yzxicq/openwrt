@@ -31,6 +31,6 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add geox/*
+          git add -f geox/*
           git commit -m "Update GeoX files" || echo "No changes to commit"
           git push
