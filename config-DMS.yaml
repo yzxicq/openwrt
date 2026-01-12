@@ -1,18 +1,10 @@
 # 锚点区
 Proxy_first: &Proxy_first {type: select, proxies: [节点选择, 香港节点, 新加坡节点, 日本节点, 台湾节点, 美国节点, 欧洲节点, 全部节点, 自建/家宽节点, 全球直连]}
-
 Direct_first: &Direct_first {type: select, proxies: [全球直连, 节点选择,  香港节点, 新加坡节点, 日本节点, 台湾节点, 美国节点, 欧洲节点, 全部节点, 自建/家宽节点]}
-
 Include_all: &Include_all {type: select, proxies: [节点选择, 香港节点, 新加坡节点, 日本节点, 台湾节点, 美国节点, 欧洲节点, 全部节点, 自建/家宽节点, 全球直连], include-all: true, exclude-filter: "(?i)(🟢 直连)"}
-
 Urltest_Base: &Urltest_Base {type: url-test, include-all: true, tolerance: 20, interval: 300, max-failed-times: 1, hidden: true}
-
 PProviders: &PProviders {type: http, interval: 86400, health-check: {enable: true, url: 'https://www.gstatic.com/generate_204', interval: 300}, filter: '^(?!.*(拒绝|直连|群|邀请|返利|循环|官网|客服|网站|网址|获取|订阅|流量|到期|机场|下次|版本|官址|备用|过期|已用|联系|邮箱|工单|贩卖|通知|倒卖|防止|国内|地址|频道|无法|说明|提示|特别|访问|支持|教程|关注|更新|作者|加入|USE|USED|TOTAL|EXPIRE|EMAIL|Panel|Channel|Author|traffic))'}
-
 ##############################################
-# 机场订阅，Airport_01/02/03名称不能重复,但可修改为自己喜欢的
-# 订阅链接1/2/3是用来写订阅链接的，填入即可
-# 机场名称1/2/3是用来给节点添加备注的，不用记得整行删除
 proxy-providers:
   Subscribe:
     <<: *PProviders
@@ -23,11 +15,8 @@ proxy-providers:
       skip-cert-verify: true
       udp: true
 ##############################################
-
-
 # 用于下载订阅时指定UA
 global-ua: clash.meta
-
 # 全局配置
 mixed-port: 7890
 ipv6: false
@@ -49,29 +38,24 @@ geodata-loader: standard
 geo-auto-update: true
 geo-update-interval: 48
 geox-url:
-  geosite: "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat"
   mmdb: "https://gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.metadb"
-  geoip: "https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat"
-  asn: "https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb"
-
+  geoip: "https://gh-proxy.org/https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat"
+  asn: "https://gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/GeoLite2-ASN.mmdb"
 # 控制面板
 external-controller: 0.0.0.0:9090
 secret: ""
 #  密码设置选项默认无
 external-ui: ui
 external-ui-url: "https://gh-proxy.org/https://github.com/Zephyruso/zashboard/archive/refs/heads/gh-pages.zip"
-
 # 匹配进程 always/strict/off
 find-process-mode: strict
 global-client-fingerprint: random
 keep-alive-idle: 600
 keep-alive-interval: 30
-
 # 策略组选择和fakeip缓存
 profile:
   store-selected: true
   store-fake-ip: true
-
 # 流量嗅探
 sniffer:
   enable: true
@@ -86,8 +70,10 @@ sniffer:
   force-domain:
     - "*.v2ex.com"
   skip-domain:
-    - "*.doppelmayr.cn"
-    - "*.doppelmayr.local"
+    - "mail.doppelmayr.cn"
+    - "autodiscover.doppelmayr.cn"
+    - "+.doppelmayr.cn"
+    - "+.doppelmayr.local"
     - "Mijia Cloud"
     - "dlg.io.mi.com"
     - "*.push.apple.com"
@@ -113,14 +99,13 @@ tun:
   auto-detect-interface: false
   route-exclude-addresses:
     - 10.19.0.0/16
-
 # DNS模块
 dns:
   enable: true
   listen: 0.0.0.0:1053
   ipv6: false
   prefer-h3: false # 是否开启 DoH 支持 HTTP/3，将并发尝试
-  respect-rules: true
+  respect-rules: false
   # 模式切换 redir-host / fake-ip
   enhanced-mode: fake-ip
   fake-ip-range: 198.18.0.1/16
@@ -128,10 +113,10 @@ dns:
   # 黑名单模式表示如果匹配成功则不返回 Fake-IP, 白名单模式时只有匹配成功才返回 Fake-IP
   fake-ip-filter-mode: blacklist
   fake-ip-filter:
-    - "*.doppelmayr.local"
-    - "*.doppelmayr.cn"
-    - "doppelmayr.local"
-    - "10.19.*"
+    - "mail.doppelmayr.cn"
+    - "autodiscover.doppelmayr.cn"
+    - "+.doppelmayr.cn"
+    - "+.doppelmayr.local"
     - "rule-set:fakeip_filter_domain"
     - "internetbeacon.msedge.net"
     - "rule-set:game_cn_domain"
@@ -157,30 +142,21 @@ dns:
   default-nameserver:
     - 180.184.1.1
     - 223.5.5.5
-    - 119.29.29.29
   proxy-server-nameserver:
-    - 180.184.1.1
-    - 223.5.5.5
-    - 119.29.29.29
+    - https://doh.pub/dns-query
+    - https://223.5.5.5/dns-query#h3=true
   direct-nameserver:
     - 10.19.0.8
-    - https://dns.alidns.com/dns-query
-    - https://doh.pub/dns-query
   nameserver:
     - 10.19.0.8
-    - https://dns.google/dns-query
-    - https://dns.cloudflare.com/dns-query
   nameserver-policy:
     "*.doppelmayr.local": 10.19.0.8
     "*.doppelmayr.cn": 10.19.0.8
     "doppelmayr.local": 10.19.0.8
-    "rule-set:banAd_domain": rcode://success
 proxies: 
   - name: "🟢 直连"
     type: direct
     udp: true
-
-
 # 策略组
 proxy-groups:
   - {name: 节点选择, type: select, proxies: [香港节点, 新加坡节点, 日本节点, 台湾节点, 美国节点, 欧洲节点, 全部节点, 自建/家宽节点, 故障转移], icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/select.png"}
@@ -227,7 +203,7 @@ proxy-groups:
   - {name: 新加坡节点, type: select, proxies: [新加坡自动, 新加坡均衡], include-all: true, filter: "(?=.*(?i)(新|🇸🇬|SG|singapore))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/Singapore.png"}
   - {name: 日本节点, type: select, proxies: [日本自动, 日本均衡], include-all: true, filter: "(?=.*(?i)(日本|🇯🇵|JP|Japan))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/Japan.png"}
   - {name: 台湾节点, type: select, proxies: [台湾自动, 台湾均衡], include-all: true, filter: "(?=.*(?i)(台|🇹🇼|TW|Taiwan))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/Taiwan_China.png"}
-  - {name: 美国节点, type: select, proxies: [美国自动, 美国均衡], include-all: true, filter: "(?=.*(?i)(美|🇺🇲|US|America|United States|Los Angeles|Chicago|Ashburn))" ,exclude-filter: "(?=.*(?i)(Australia|Russia))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/America.png"}
+  - {name: 美国节点, type: select, proxies: [美国自动, 美国均衡], include-all: true, filter: "(?=.*(?i)(美|🇺🇸|US|America|United States|Los Angeles|Chicago|Ashburn))" ,exclude-filter: "(?=.*(?i)(Australia|Russia))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/America.png"}
 #  - {name: 欧洲节点, type: select, include-all: true, filter: "(?=.*(?i)(🇦🇱|🇦🇩|🇦🇹|🇧🇾|🇧🇪|🇧🇦|🇧🇬|🇭🇷|🇨🇾|🇨🇿|🇩🇰|🇪🇪|🇫🇮|🇫🇷|🇩🇪|🇬🇷|🇭🇺|🇮🇸|🇮🇪|🇮🇹|🇽🇰|🇱🇻|🇱🇮|🇱🇹|🇱🇺|🇲🇹|🇲🇩|🇲🇨|🇲🇪|🇳🇱|🇲🇰|🇳🇴|🇵🇱|🇵🇹|🇷🇴|🇷🇺|🇸🇲|🇷🇸|🇸🇰|🇸🇮|🇪🇸|🇸🇪|🇨🇭|🇹🇷|🇺🇦|🇬🇧|🇻🇦))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/European.png"}
   - {name: 欧洲节点, type: select, include-all: true, filter: "(?i)(🇦🇱|🇦🇩|🇦🇹|🇧🇾|🇧🇪|🇧🇦|🇧🇬|🇭🇷|🇨🇾|🇨🇿|🇩🇰|🇪🇪|🇫🇮|🇫🇷|🇩🇪|🇬🇷|🇭🇺|🇮🇸|🇮🇪|🇮🇹|🇽🇰|🇱🇻|🇱🇮|🇱🇹|🇱🇺|🇲🇹|🇲🇩|🇲🇨|🇲🇪|🇳🇱|🇲🇰|🇳🇴|🇵🇱|🇵🇹|🇷🇴|🇷🇺|🇸🇲|🇷🇸|🇸🇰|🇸🇮|🇪🇸|🇸🇪|🇨🇭|🇹🇷|🇺🇦|🇬🇧|🇻🇦|Europe|EU-|Germany|DE-|GER|Deutschland|Netherlands|NL-|Amsterdam|AMS|France|FR-|Paris|FRA|UK|GB|London|LHR|Ireland|Italy|IT-|Milan|Spain|ES-|Sweden|SE-|Swiss|Switzerland|CH-|Zurich|Poland|PL-|Ukraine|Turkey|TR-|Russia|RU-|欧洲|德国|德|荷兰|荷|法国|法|英国|英|爱尔兰|意大利|意|西班牙|瑞典|瑞士|瑞|挪威|芬兰|波兰|乌克兰|俄罗|俄|土耳其|土)", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/European.png"}
   - {name: 全部节点, type: select, include-all: true, tolerance: 20, interval: 300, exclude-filter: "(?i)(🟢 直连)", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/all.png"}
@@ -235,12 +211,12 @@ proxy-groups:
   - {name: 新加坡自动, <<: *Urltest_Base, filter: "(?=.*(?i)(新|🇸🇬|SG|Singapore))" ,exclude-filter: "(?=.*(?i)(The_SG_automation|wcloud|0倍|0\\.1倍|0\\.01倍|0\\.3X|0\\.2x|0\\.5x|3X|2x|1\\.5x|traffic|plus))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/automation2.png"}
   - {name: 日本自动, <<: *Urltest_Base, filter: "(?=.*(?i)(日本|🇯🇵|JP|Japan))" ,exclude-filter: "(?=.*(?i)(The_JP_automation|wcloud|0倍|0\\.1倍|0\\.01倍|0\\.3X|0\\.2x|0\\.5x|3X|2x|1\\.5x|traffic|plus))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/automation2.png"}
   - {name: 台湾自动, <<: *Urltest_Base, filter: "(?=.*(?i)(台|🇹🇼|TW|Taiwan))" ,exclude-filter: "(?=.*(?i)(The_TW_automation|wcloud|0倍|0\\.1倍|0\\.01倍|0\\.3X|0\\.2x|0\\.5x|3X|2x|1\\.5x|traffic|plus))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/automation2.png"}
-  - {name: 美国自动, <<: *Urltest_Base, filter: "(?=.*(?i)(美|🇺🇲|US|America|United States|Los Angeles|Chicago|Ashburn))" ,exclude-filter: "(?=.*(?i)(The_US_automation|wcloud|0倍|0\\.1倍|0\\.01倍|0\\.3X|0\\.2x|0\\.5x|3X|2x|1\\.5x|russia|austria|plus|traffic|Australia|rus|aus))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/automation2.png"}
+  - {name: 美国自动, <<: *Urltest_Base, filter: "(?=.*(?i)(美|🇺🇸|US|America|United States|Los Angeles|Chicago|Ashburn))" ,exclude-filter: "(?=.*(?i)(The_US_automation|wcloud|0倍|0\\.1倍|0\\.01倍|0\\.3X|0\\.2x|0\\.5x|3X|2x|1\\.5x|russia|austria|plus|traffic|Australia|rus|aus))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/automation2.png"}
   - {name: 香港均衡, type: load-balance, include-all: true, strategy: consistent-hashing, hidden: true, filter: "(?=.*(?i)(香港|hk|hongkong|Hong Kong|🇭🇰))" ,exclude-filter: "(?=.*(?i)(The_HK_balance|wcloud|0倍|0\\.1倍|0\\.01倍|0\\.3X|0\\.2x|0\\.5x|3X|2x|1\\.5x|traffic|plus))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/load-balance.png"}
   - {name: 新加坡均衡, type: load-balance, include-all: true, strategy: consistent-hashing, hidden: true, filter: "(?=.*(?i)(新|🇸🇬|SG|Singapore))" ,exclude-filter: "(?=.*(?i)(The_SG_balance|wcloud|0倍|0\\.1倍|0\\.01倍|0\\.3X|0\\.2x|0\\.5x|3X|2x|1\\.5x|traffic|plus))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/load-balance.png"}
   - {name: 日本均衡, type: load-balance, include-all: true, strategy: consistent-hashing, hidden: true, filter: "(?=.*(?i)(日本|🇯🇵|JP|Japan))" ,exclude-filter: "(?=.*(?i)(The_JP_balance|wcloud|0倍|0\\.1倍|0\\.01倍|0\\.3X|0\\.2x|0\\.5x|3X|2x|1\\.5x|traffic|plus))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/load-balance.png"}
   - {name: 台湾均衡, type: load-balance, include-all: true, strategy: consistent-hashing, hidden: true, filter: "(?=.*(?i)(台|🇹🇼|TW|Taiwan))" ,exclude-filter: "(?=.*(?i)(The_TW_balance|wcloud|0倍|0\\.1倍|0\\.01倍|0\\.3X|0\\.2x|0\\.5x|3X|2x|1\\.5x|traffic|plus))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/load-balance.png"}
-  - {name: 美国均衡, type: load-balance, include-all: true, strategy: consistent-hashing, hidden: true, filter: "(?=.*(?i)(美|🇺🇲|US|America|united States|Ashburn))" ,exclude-filter: "(?=.*(?i)(The_US_balance|wcloud|0倍|0\\.1倍|0\\.01倍|0\\.3X|0\\.2x|0\\.5x|3X|2x|1\\.5x|russia|austria|plus|traffic|Australia|rus|aus))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/load-balance.png"}
+  - {name: 美国均衡, type: load-balance, include-all: true, strategy: consistent-hashing, hidden: true, filter: "(?=.*(?i)(美|🇺🇸|US|America|united States|Ashburn))" ,exclude-filter: "(?=.*(?i)(The_US_balance|wcloud|0倍|0\\.1倍|0\\.01倍|0\\.3X|0\\.2x|0\\.5x|3X|2x|1\\.5x|russia|austria|plus|traffic|Australia|rus|aus))", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/load-balance.png"}
 # 功能型代理组默认隐藏 start
   - {name: 🔗 代理, type: select, hidden: true, proxies: [节点选择]}
   - {name: 🚫 拒绝, type: select, hidden: true, proxies: [REJECT]}
@@ -248,27 +224,8 @@ proxy-groups:
 # over
   - {name: 故障转移, type: fallback, include-all: true, proxies: [香港节点, 新加坡节点, 日本节点, 台湾节点, 美国节点, 欧洲节点, 自建/家宽节点], interval: 300, exclude-filter: "(?i)(🟢 直连)", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/fallback.png"}
   - {name: GLOBAL, type: select, include-all: true , proxies: [节点选择, YouTube, GoogleVPN, FCM, Google, Meta, AI, GitHub, OneDrive, Microsoft, Telegram, Discord, Talkatone, LINE, Signal, TikTok, NETFLIX, DisneyPlus, HBO, Primevideo, AppleTV, Apple, Emby, 哔哩哔哩, 哔哩东南亚, 巴哈姆特, Spotify, 国内媒体, Global-TV, Global-Medial, 游戏平台, Speedtest, PayPal, Wise, 国外电商, STEAM, 全球直连, 隐私拦截, Final, 自建/家宽节点, 香港节点, 新加坡节点, 日本节点, 台湾节点, 美国节点, 欧洲节点, 全部节点, 香港自动, 新加坡自动, 日本自动, 台湾自动, 美国自动, 香港均衡, 新加坡均衡, 日本均衡, 台湾均衡, 美国均衡, 故障转移], exclude-filter: "(?i)(🟢 直连)", icon: "https://pub-8feead0908f649a8b94397f152fb9cba.r2.dev/global.png"}
-  
-rules: 
-#Clash/Nikki 的直连/代理判断顺序大致如下：
-# 1.DOMAIN → 域名匹配
-# 2.IP-CIDR → IP 匹配
-# 3.DST-PORT → 端口匹配（有些规则依赖端口）
-# 4.MATCH → 默认策略（通常是 FINAL 组）
-# 5.匹配是从上到下顺序执行，第一条匹配到的规则生效，后续规则不再匹配。
-# --- 内网 VLAN 直连 ---
-#  - IP-CIDR,10.19.0.0/24,DIRECT     # ServerNet (包含域控、Exchange)
-#  - IP-CIDR,10.19.9.0/24,DIRECT     # Management (防火墙、交换机等)
-#  - IP-CIDR,10.19.10.0/24,DIRECT    # FW VLAN
-#  - IP-CIDR,10.19.20.0/23,DIRECT    # West building Ethernet & VoIP
-#  - IP-CIDR,10.19.30.0/24,DIRECT    # East building Ethernet & VoIP
-#  - IP-CIDR,10.19.50.0/24,DIRECT    # WestWiFi 办公无线
-#  - IP-CIDR,10.19.70.0/24,DIRECT    # EastWiFi 办公无线
-#  - IP-CIDR,10.19.60.0/24,DIRECT    # 门禁系统
-#  - IP-CIDR,10.19.40.0/24,DIRECT    # IPCam
-#  - IP-CIDR,10.19.80.0/24,DIRECT    # GuestWiFi (如要翻墙请删除此行)
-#  - IP-CIDR,10.19.90.0/24,DIRECT    # VPN
-
+#规则集
+rules:
 # --- 内网 VLAN 直连 ---
   - IP-CIDR,10.19.0.0/16,DIRECT        # 公司内网总网段
   - IP-CIDR,224.0.0.0/4,DIRECT        # 多播
@@ -289,7 +246,6 @@ rules:
   - DST-PORT,3269,DIRECT      # 全局编录 SSL
   - DST-PORT,3389,DIRECT      # 远程桌面（可选）
 
-# --- 第三方规则集 ---
   - RULE-SET,banAd_domain,隐私拦截
   - RULE-SET,wechat_domain,全球直连
   - RULE-SET,wechat_asn,全球直连,no-resolve
@@ -471,7 +427,6 @@ rule-providers:
   TVB_domain: { <<: *domain, url: "https://gh-proxy.org/https://raw.githubusercontent.com/Lanlan13-14/Rules/refs/heads/main/rules/Domain/tvb.mrs" }
   game_cn_domain: { <<: *domain, url: "https://gh-proxy.org/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo/geosite/category-games%40cn.mrs" }
   fakeip_filter_domain: { <<: *domain, url: "https://gh-proxy.org/https://raw.githubusercontent.com/Lanlan13-14/Rules/refs/heads/main/rules/Domain/fakeip-filter.mrs" }
-
   bilibili_ip: { <<: *ip, url: "https://gh-proxy.org/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/refs/heads/meta/geo-lite/geoip/bilibili.mrs" }
   cn_ip: { <<: *ip, url: "https://gh-proxy.org/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/cn.mrs" }
   google_ip: { <<: *ip, url: "https://gh-proxy.org/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geoip/google.mrs" }
@@ -485,7 +440,6 @@ rule-providers:
   steamcdn_ip: { <<: *ip, url: "https://gh-proxy.org/https://raw.githubusercontent.com/Lanlan13-14/Rules/refs/heads/main/rules/IP/steamCDN-ip.mrs" }
   NetEaseMusic_ip: { <<: *ip, url: "https://gh-proxy.org/https://raw.githubusercontent.com/Lanlan13-14/Rules/refs/heads/main/rules/IP/NetEaseMusic-ip.mrs" }
   emby_ip: { <<: *ip, url: "https://gh-proxy.org/https://raw.githubusercontent.com/Lanlan13-14/Rules/refs/heads/main/rules/IP/emby-ip.mrs" }
-
   google_asn_cn: { <<: *ip, url: "https://gh-proxy.org/https://raw.githubusercontent.com/Lanlan13-14/Rules/refs/heads/main/rules/IP/AS24424.mrs" }
   discord_asn: { <<: *ip, url: "https://gh-proxy.org/https://raw.githubusercontent.com/Lanlan13-14/Rules/refs/heads/main/rules/IP/AS49544.mrs" }
   wechat_asn: { <<: *ip, url: "https://gh-proxy.org/https://raw.githubusercontent.com/Lanlan13-14/Rules/refs/heads/main/rules/IP/AS132203.mrs" }
