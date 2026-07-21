@@ -10,12 +10,12 @@ config config 'config'
 	option core_only '0'
 
 # ========================
-#     系统环境（Hy2 必改）
+#     系统环境（HY2 / TUIC 必改）
 # ========================
 config procd 'procd'
 	option fast_reload '1'
 	option env_disable_loopback_detector '0'
-	# Hy2 / TUIC 必须禁用 GSO 否则断流
+	# QUIC / HY2 稳定性关键
 	option env_disable_quic_go_gso '1'
 	option env_disable_quic_go_ecn '1'
 	option env_skip_system_ipv6_check '1'
@@ -28,10 +28,12 @@ config mixin 'mixin'
 	option mode 'rule'
 	option match_process 'off'
 	option ipv6 '0'
+	option allow_lan '1'
+	option selection_cache '1'
+
 	option ui_url 'https://gh-proxy.org/https://github.com/Zephyruso/zashboard/releases/latest/download/dist-cdn-fonts.zip'
 	option api_listen '[::]:9090'
-	option selection_cache '1'
-	option allow_lan '1'
+	option api_secret '42716'
 
 	# 入站端口
 	option http_port '8080'
@@ -41,12 +43,12 @@ config mixin 'mixin'
 	option tproxy_port '7892'
 	option authentication '1'
 
-	# ========================
-	#       TUN（核心）
-	# ========================
+# ========================
+#          TUN（核心）
+# ========================
 	option tun_enabled '1'
 	option tun_device 'nikki'
-	# 【旁路由最佳】mixed 支持内核与用户态混合，Hy2 最稳
+	# mixed = 内核 + 用户态，HY2 最稳
 	option tun_stack 'mixed'
 	option tun_dns_hijack '1'
 	list tun_dns_hijacks 'tcp://any:53'
@@ -54,9 +56,9 @@ config mixin 'mixin'
 	option auto_route '1'
 	option auto_redirect '0'
 
-	# ========================
-	#         DNS
-	# ========================
+# ========================
+#            DNS
+# ========================
 	option dns_enabled '1'
 	option dns_listen '[::]:1053'
 	option dns_ipv6 '0'
@@ -67,7 +69,7 @@ config mixin 'mixin'
 	option dns_system_hosts '1'
 	option dns_hosts '1'
 
-	# Fake-IP 黑名单（旁路由必备）
+	# Fake-IP 黑名单（旁路由必须）
 	option fake_ip_filter '1'
 	option fake_ip_filter_mode 'blacklist'
 	list fake_ip_filters '+.lan'
@@ -81,32 +83,33 @@ config mixin 'mixin'
 	list fake_ip_filters '+.stun.*'
 	list fake_ip_filters '+.dns.google'
 
-	# ========================
-	#     流量嗅探（建议开启）
-	# ========================
+# ========================
+#        流量嗅探
+# ========================
 	option sniffer_sniff '1'
 	option sniffer_force_domain_name '1'
 	option sniffer_ignore_domain_name '0'
 
-	# ========================
-	#        Geo 资源
-	# ========================
-	option rule '0'
-	option rule_provider '0'
-	option mixin_file_content '0'
-	option ui_path 'ui'
-	option api_secret '42716'
-
+# ========================
+#        Geo 数据（只保留 2 个仓库）
+# ========================
 	option geoip_format 'dat'
+
+	# 规则类：Loyalsoldier
 	option geosite_url 'https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geosite.dat'
+	option geoip_dat_url 'https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat'
+
+	# 数据库类：MetaCubeX
 	option geoip_mmdb_url 'https://gh-proxy.org/https://github.com/MetaCubeX/meta-rules-dat/releases/download/latest/geoip-lite.metadb'
 	option geoip_asn_url 'https://cdn.jsdelivr.net/gh/MetaCubeX/meta-rules-dat@release/GeoLite2-ASN.mmdb'
-	option geoip_dat_url 'https://cdn.jsdelivr.net/gh/Loyalsoldier/v2ray-rules-dat@release/geoip.dat'
-	option geox_auto_update '1'
-	option geodata_loader 'standard'
-	option geox_update_interval '24'
 
-	# TCP 优化
+	option geox_auto_update '1'
+	option geox_update_interval '24'
+	option geodata_loader 'standard'
+
+# ========================
+#         TCP 优化
+# ========================
 	option unify_delay '1'
 	option tcp_concurrent '1'
 	option tcp_keep_alive_idle '600'
@@ -114,21 +117,12 @@ config mixin 'mixin'
 	option disable_tcp_keep_alive '0'
 
 # ========================
-#   登录认证
+#        登录认证
 # ========================
 config authentication
 	option enabled '1'
 	option username 'nikki'
 	option password '42716'
-
-# ========================
-#   hosts 可不动
-# ========================
-config hosts
-	option enabled '0'
-	option domain_name 'localhost'
-	list ip '127.0.0.1'
-	list ip '::1'
 
 # ========================
 #        全 TUN 入站
@@ -141,38 +135,14 @@ config proxy 'proxy'
 	option ipv4_dns_hijack '1'
 	option ipv6_dns_hijack '1'
 	option ipv4_proxy '1'
-	option ipv6_proxy '0'    # 禁用 IPv6
+	option ipv6_proxy '0'
 	option fake_ip_ping_hijack '1'
+
 	option router_proxy '1'
 	option lan_proxy '1'
 	list lan_inbound_interface 'lan'
 
-	# 保留网段（默认）
-	list reserved_ip '0.0.0.0/8'
-	list reserved_ip '10.0.0.0/8'
-	list reserved_ip '127.0.0.0/8'
-	list reserved_ip '100.64.0.0/10'
-	list reserved_ip '169.254.0.0/16'
-	list reserved_ip '172.16.0.0/12'
-	list reserved_ip '192.168.0.0/16'
-	list reserved_ip '224.0.0.0/4'
-	list reserved_ip '240.0.0.0/4'
-
-	list reserved_ip6 '::/128'
-	list reserved_ip6 '::1/128'
-	list reserved_ip6 '::ffff:0:0/96'
-	list reserved_ip6 '100::/64'
-	list reserved_ip6 '64:ff9b::/96'
-	list reserved_ip6 '2001::/32'
-	list reserved_ip6 '2001:10::/28'
-	list reserved_ip6 '2001:20::/28'
-	list reserved_ip6 '2001:db8::/32'
-	list reserved_ip6 '2002::/16'
-	list reserved_ip6 'fc00::/7'
-	list reserved_ip6 'fe80::/10'
-	list reserved_ip6 'ff00::/8'
-
-	# Fake-IP 必须关闭此项，否则分流冲突
+	# fake-ip + 分流必须关闭 bypass CN
 	option bypass_china_mainland_ip '0'
 	option bypass_china_mainland_ip6 '0'
 
@@ -180,19 +150,6 @@ config proxy 'proxy'
 	option proxy_udp_dport '0-65535'
 	option tun_timeout '30'
 	option tun_interval '10'
-
-# ========================
-#    路由与访问控制
-# ========================
-config router_access_control
-	option enabled '1'
-	option dns '1'
-	option proxy '1'
-
-config lan_access_control
-	option enabled '1'
-	option dns '1'
-	option proxy '1'
 
 # ========================
 #        嗅探规则
@@ -217,21 +174,3 @@ config sniff
 	list port '443'
 	list port '8443'
 	option overwrite_destination '1'
-
-# ========================
-# RFC 路由表配置
-# ========================
-config routing 'routing'
-	option tproxy_fw_mark '0x80'
-	option tproxy_fw_mask '0xFF'
-	option tun_fw_mark '0x81'
-	option tun_fw_mask '0xFF'
-	option tproxy_rule_pref '1024'
-	option tun_rule_pref '1025'
-	option tproxy_route_table '80'
-	option tun_route_table '81'
-	option cgroup_id '0x12061206'
-	option cgroup_name 'nikki'
-
-config editor 'editor'
-config log 'log'
