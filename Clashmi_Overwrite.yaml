@@ -34,6 +34,7 @@ Anchor_OT: &Anchor_OT '^(?!.*(DIRECT|直接连接|香港|台湾|台灣|日本|�
 Anchor_HY2: &Anchor_HY2 '^(?i)(?=.*(hy|HY)).*$'
 Anchor_VLESS: &Anchor_VLESS '^(?i)(?=.*(vless|VLESS|Reality|reality|VL|vl)).*$'
 
+
 # ███████████████████████████ 核心配置 ███████████████████████████
 # ══ 基础配置 ══
 mode: rule                                                              # 工作模式  rule（规则模式）/ global（全局模式）/ direct（直连模式）
@@ -53,7 +54,7 @@ external-ui: ui                                                         # 面板
 secret: ""                                                              # 面板密码
 # ══ TUN配置 ══
 tun:
-  enable: true                                                          # 网卡模式  是否启用 TUN 虚拟网卡模式  
+  enable: false                                                         # 网卡模式  是否启用 TUN 虚拟网卡模式  
   stack: mixed                                                          # 协议类型  网络栈：system（系统栈）/ gvisor（内置用户态栈）/ mixed（混合）
   dns-hijack: [udp://any:53, tcp://any:53]                              # 劫持请求  劫持所有 UDP/TCP 53 端口的 DNS 请求
   auto-detect-interface: true                                           # 自动出口  自动识别默认出口网络接口 （仅内核模式有效）
@@ -95,16 +96,24 @@ dns:
   enhanced-mode: fake-ip                                                # 增强模式  FDNS 增强模式（Fake-IP，用于防止 DNS 泄露）
   fake-ip-range: 198.18.0.1/16                                          # 虚拟地址  Fake-IP 虚拟地址池范围
   fake-ip-filter-mode: blacklist                                        # 过滤模式  Fake-IP 过滤模式（命中规则则返回真实 IP）
-  respect-rules: false                                                  # 遵循规则  不强制遵循规则顺序
+  respect-rules: true                                                   # 遵循规则  不强制遵循规则顺序
+  cache-algorithm: arc                                                  # 【性能升级】自适应缓存算法，大幅提升高频域名的解析命中率
   fake-ip-filter:
     - "+.lan"                                                           # 真实解析  常见局域网域名后缀
     - "rule-set:add_direct_domain"                                      # 真实解析  大陆冷门域名
     - "rule-set:cn_domain"                                              # 真实解析  大陆域名数据
     - "*.sentinelone.net"
-  nameserver:                                                           # 解析服务  请使用运营商提供的 DNS
+  default-nameserver:                                                   # 解析服务  请使用运营商提供的 DNS
     - 223.5.5.5
-    - 119.29.29.29
-
+    - 180.184.1.1
+  proxy-server-nameserver:                                              # 【新增】安全防漏：强制使用加密 DNS 解析机场节点域名
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
+  nameserver:
+    - https://doh.pub/dns-query                                        
+    - https://dns.alidns.com/dns-query  
+  nameserver-policy:                                                    # 【新增】性能提速：国内常见域名直接走 UDP 明文解析，省去 TLS 握手时间，秒开网页
+    "rule-set:cn_domain": [223.5.5.5, 119.29.29.29]
 
 
 # ███████████████████████████ 策略分组 ███████████████████████████
