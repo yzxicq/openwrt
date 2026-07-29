@@ -53,7 +53,7 @@ external-ui: ui                                                         # 面板
 secret: ""                                                              # 面板密码
 # ══ TUN配置 ══
 tun:
-  enable: false                                                          # 网卡模式  是否启用 TUN 虚拟网卡模式  
+  enable: true                                                          # 网卡模式  是否启用 TUN 虚拟网卡模式  
   stack: mixed                                                          # 协议类型  网络栈：system（系统栈）/ gvisor（内置用户态栈）/ mixed（混合）
   dns-hijack: [udp://any:53, tcp://any:53]                              # 劫持请求  劫持所有 UDP/TCP 53 端口的 DNS 请求
   auto-detect-interface: true                                           # 自动出口  自动识别默认出口网络接口 （仅内核模式有效）
@@ -165,8 +165,8 @@ proxy-groups:
 
 # ███████████████████████████ 规则匹配 ███████████████████████████
 rules:
-  - RULE-SET,private_domain,国内直连                                    # Private
-  - RULE-SET,private_ip,国内直连,no-resolve                             # Private
+  - RULE-SET,private_domain,DIRECT                                      # Private
+  - RULE-SET,private_ip,DIRECT,no-resolve                               # Private
   - RULE-SET,openai_domain,ChatGPT                                      # ChatGPT
   - RULE-SET,anthropic_domain,Claude                                    # Claude
   - RULE-SET,google-gemini_domain,Gemini                                # Gemini
