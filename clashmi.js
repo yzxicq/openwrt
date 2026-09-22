@@ -19,7 +19,35 @@ function main(config) {
   };
 
   // ================================================================
-  // 2. TUN 虚拟网卡配置 (移动端核心模式)
+  // 2. 节点过滤与参数校验修复 (修复 invalid REALITY short ID)
+  // ================================================================
+  const rawProxies = Array.isArray(config["proxies"]) ? config["proxies"] : [];
+  const validProxies = [];
+  const proxyNames = [];
+
+  rawProxies.forEach(p => {
+    if (!p || !p.name) return;
+    // 过滤机场提示与广告节点
+    if (/到期|过期|剩余|网址|官网|邮箱|订阅|套餐|流量|说明|重置/i.test(p.name)) return;
+
+    // 针对 Reality 节点的 short-id 校验修复
+    if (p.type === "vless" && p["reality-opts"]) {
+      const shortId = p["reality-opts"]["short-id"];
+      // 如果 short-id 存在但不是合法的偶数位十六进制，重置为空字符以通过内核校验
+      if (shortId !== undefined && (typeof shortId !== "string" || !/^[0-9a-fA-F]*$/.test(shortId) || shortId.length % 2 !== 0)) {
+        p["reality-opts"]["short-id"] = "";
+      }
+    }
+
+    validProxies.push(p);
+    proxyNames.push(p.name);
+  });
+
+  // 更新修复后的节点列表
+  config["proxies"] = validProxies;
+
+  // ================================================================
+  // 3. TUN 虚拟网卡配置 (移动端核心模式)
   // ================================================================
   config["tun"] = {
     "enable": true,
@@ -33,7 +61,7 @@ function main(config) {
   };
 
   // ================================================================
-  // 3. 流量嗅探 (Sniffer)
+  // 4. 流量嗅探 (Sniffer)
   // ================================================================
   config["sniffer"] = {
     "enable": true,
@@ -66,7 +94,7 @@ function main(config) {
   };
 
   // ================================================================
-  // 4. Hosts 静态映射与 PCDN 阻断
+  // 5. Hosts 静态映射与 PCDN 阻断
   // ================================================================
   config["hosts"] = {
     "services.googleapis.cn": ["services.googleapis.com"],
@@ -80,7 +108,7 @@ function main(config) {
   };
 
   // ================================================================
-  // 5. DNS 防泄漏与内外网分流
+  // 6. DNS 防泄漏与内外网分流
   // ================================================================
   config["dns"] = {
     "enable": true,
@@ -138,19 +166,10 @@ function main(config) {
   };
 
   // ================================================================
-  // 6. 提取原始机场节点并构建动态拓扑
+  // 7. 区域匹配与构建策略组
   // ================================================================
-  const rawProxies = Array.isArray(config["proxies"]) ? config["proxies"] : [];
-  const proxyNames = [];
-  rawProxies.forEach(p => {
-    if (p && p.name && !/到期|过期|剩余|网址|官网|邮箱|订阅|套餐|流量|说明|重置/i.test(p.name)) {
-      proxyNames.push(p.name);
-    }
-  });
-
   const filterNodes = (reg) => proxyNames.filter(name => reg.test(name));
 
-  // 此处已全面修正为 JS 标准正则（末尾加 /i 标志）
   const regionConfigs = [
     { key: "香港", reg: /(香港|hk|hkg|hongkong|hong\s*kong|🇭🇰)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/HK.png" },
     { key: "台湾", reg: /(台湾|台灣|tw|tpe|khh|tsa|taiwan|taipei|🇹🇼)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/TW.png" },
@@ -264,7 +283,7 @@ function main(config) {
   config["proxy-groups"] = [...serviceGroups, ...dynamicGroups];
 
   // ================================================================
-  // 7. 规则提供者 (Rule Providers) - 纯 MRS 引擎
+  // 8. 规则提供者 (Rule Providers) - 纯 MRS 引擎
   // ================================================================
   const mkMrsDomain = (url) => ({ type: "http", interval: 86400, behavior: "domain", format: "mrs", url });
   const mkMrsIp = (url) => ({ type: "http", interval: 86400, behavior: "ipcidr", format: "mrs", url });
@@ -304,7 +323,7 @@ function main(config) {
   };
 
   // ================================================================
-  // 8. 路由匹配规则 (Rules)
+  // 9. 路由匹配规则 (Rules)
   // ================================================================
   config["rules"] = [
     "RULE-SET,private_domain,DIRECT",
