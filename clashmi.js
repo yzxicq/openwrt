@@ -19,43 +19,37 @@ function main(config) {
   };
 
   // ================================================================
-  // 2. 深度清洗与修复节点列表 (彻底阻断 invalid REALITY short ID)
+  // 2. 原地深度兼容修复 (就地修复底层参数，不动原始 proxies 引用结构)
   // ================================================================
-  const rawProxies = Array.isArray(config["proxies"]) ? config["proxies"] : [];
-  const safeProxies = [];
-  const proxyNames = [];
+  var originalProxies = Array.isArray(config["proxies"]) ? config["proxies"] : [];
+  var proxyNames = [];
 
-  rawProxies.forEach((p, idx) => {
+  originalProxies.forEach(function(p) {
     if (!p || !p.name || typeof p.name !== "string") return;
 
-    // 过滤废弃与广告节点
+    // 过滤失效与广告节点
     if (/到期|过期|剩余|网址|官网|邮箱|订阅|套餐|流量|说明|重置/i.test(p.name)) {
       return;
     }
 
-    // 深度排查 Reality 配置缺陷 (兼容 short-id 与 shortId)
-    const reality = p["reality-opts"] || p["reality_opts"];
-    if (reality) {
-      const sidKey = ("short-id" in reality) ? "short-id" : ("shortId" in reality ? "shortId" : null);
-      if (sidKey) {
-        const sid = String(reality[sidKey] || "").trim();
-        // 必须为合法的偶数位16进制；若不是，直接删除该键，由内核使用默认逻辑
-        const isValidHex = /^[0-9a-fA-F]*$/.test(sid) && sid.length % 2 === 0;
-        if (!isValidHex) {
-          delete reality[sidKey];
+    // 就地兼容 Reality 协议：自动修正不规范的 short-id 为合法偶数位 Hex
+    var ro = p["reality-opts"] || p["reality_opts"];
+    if (ro) {
+      var sidKey = ("short-id" in ro) ? "short-id" : ("shortId" in ro ? "shortId" : null);
+      if (sidKey && ro[sidKey] !== undefined && ro[sidKey] !== null) {
+        var sid = String(ro[sidKey]).trim().replace(/[^0-9a-fA-F]/g, "");
+        if (sid.length > 0 && sid.length % 2 !== 0) {
+          sid = "0" + sid; // 奇数位自动补 0 变标准偶数位
         }
+        ro[sidKey] = sid;
       }
     }
 
-    safeProxies.push(p);
     proxyNames.push(p.name);
   });
 
-  // 回写干净的节点池
-  config["proxies"] = safeProxies;
-
   // ================================================================
-  // 3. TUN 虚拟网卡配置 (移动端标准配置)
+  // 3. TUN 虚拟网卡配置
   // ================================================================
   config["tun"] = {
     "enable": true,
@@ -69,7 +63,7 @@ function main(config) {
   };
 
   // ================================================================
-  // 4. 流量嗅探 (Sniffer)
+  // 4. 嗅探功能 (包含你的 cwac.cc 与 doppelmayr.cn 豁免)
   // ================================================================
   config["sniffer"] = {
     "enable": true,
@@ -116,7 +110,7 @@ function main(config) {
   };
 
   // ================================================================
-  // 6. DNS 防泄漏与内外网分流
+  // 6. DNS 防泄漏与内外网分流 (含公司内网与家庭自建)
   // ================================================================
   config["dns"] = {
     "enable": true,
@@ -173,11 +167,15 @@ function main(config) {
   };
 
   // ================================================================
-  // 7. 区域匹配与构建策略组
+  // 7. 策略组构建 (对标你的锚点架构)
   // ================================================================
-  const filterNodes = (reg) => proxyNames.filter(name => reg.test(name));
+  var filterNodes = function(reg) {
+    return proxyNames.filter(function(name) {
+      return reg.test(name);
+    });
+  };
 
-  const regionConfigs = [
+  var regionConfigs = [
     { key: "香港", reg: /(香港|hk|hkg|hongkong|hong\s*kong|🇭🇰)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/HK.png" },
     { key: "台湾", reg: /(台湾|台灣|tw|tpe|khh|tsa|taiwan|taipei|🇹🇼)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/TW.png" },
     { key: "日本", reg: /(日本|jp|nrt|hnd|kix|cts|fuk|japan|tokyo|🇯🇵)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/JP.png" },
@@ -189,18 +187,18 @@ function main(config) {
     { key: "Reality", reg: /(vless|reality|VL)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/OT.png" }
   ];
 
-  const dynamicGroups = [];
-  const fallbackList = [];
-  const autoList = [];
-  const manualList = [];
+  var dynamicGroups = [];
+  var fallbackList = [];
+  var autoList = [];
+  var manualList = [];
 
-  regionConfigs.forEach(item => {
-    let matched = filterNodes(item.reg);
+  regionConfigs.forEach(function(item) {
+    var matched = filterNodes(item.reg);
     if (matched.length === 0) matched = ["DIRECT"];
 
-    const mName = `${item.key}-手动`;
-    const aName = `${item.key}-自动`;
-    const fName = `${item.key}-故转`;
+    var mName = item.key + "-手动";
+    var aName = item.key + "-自动";
+    var fName = item.key + "-故转";
 
     dynamicGroups.push({
       name: mName,
@@ -238,8 +236,8 @@ function main(config) {
   });
 
   // 补充“其他-手动”
-  const otherRegex = /^(?!.*(DIRECT|直接连接|香港|台湾|台灣|日本|韩国|韓國|新加坡|美国|美國|奥地利|比利时|保加利亚|克罗地亚|塞浦路斯|捷克|丹麦|爱沙尼亚|芬兰|法国|德国|希腊|匈牙利|爱尔兰|意大利|拉脱维亚|立陶宛|卢森堡|荷兰|波兰|葡萄牙|罗马尼亚|斯洛伐克|斯洛文尼亚|西班牙|瑞典|英国|🇭🇰|🇹🇼|🇸🇬|🇯🇵|🇰🇷|🇺🇸|🇬🇧|HK|TW|SG|JP|KR|US|GB|CDG|FRA|AMS|MAD|BCN|FCO|MUC|BRU|HKG|TPE|TSA|KHH|SIN|XSP|NRT|HND|KIX|CTS|FUK|JFK|LAX|ORD|ATL|DFW|SFO|MIA|SEA|IAD|LHR|LGW)).*$/i;
-  let otherMatched = filterNodes(otherRegex);
+  var otherRegex = /^(?!.*(DIRECT|直接连接|香港|台湾|台灣|日本|韩国|韓國|新加坡|美国|美國|奥地利|比利时|保加利亚|克罗地亚|塞浦路斯|捷克|丹麦|爱沙尼亚|芬兰|法国|德国|希腊|匈牙利|爱尔兰|意大利|拉脱维亚|立陶宛|卢森堡|荷兰|波兰|葡萄牙|罗马尼亚|斯洛伐克|斯洛文尼亚|西班牙|瑞典|英国|🇭🇰|🇹🇼|🇸🇬|🇯🇵|🇰🇷|🇺🇸|🇬🇧|HK|TW|SG|JP|KR|US|GB|CDG|FRA|AMS|MAD|BCN|FCO|MUC|BRU|HKG|TPE|TSA|KHH|SIN|XSP|NRT|HND|KIX|CTS|FUK|JFK|LAX|ORD|ATL|DFW|SFO|MIA|SEA|IAD|LHR|LGW)).*$/i;
+  var otherMatched = filterNodes(otherRegex);
   if (otherMatched.length === 0) otherMatched = ["DIRECT"];
   dynamicGroups.push({
     name: "其他-手动",
@@ -250,12 +248,12 @@ function main(config) {
   manualList.push("其他-手动");
 
   // 出站基础锚点 proxies
-  const basePG = [...fallbackList, ...autoList, ...manualList, "DIRECT"];
-  const baseOP = ["一键代理", ...basePG];
-  const baseLD = ["DIRECT", "一键代理", ...basePG.filter(p => p !== "DIRECT")];
+  var basePG = fallbackList.concat(autoList).concat(manualList).concat(["DIRECT"]);
+  var baseOP = ["一键代理"].concat(basePG);
+  var baseLD = ["DIRECT", "一键代理"].concat(basePG.filter(function(x) { return x !== "DIRECT"; }));
 
   // 业务服务组
-  const serviceGroupsConfig = [
+  var serviceGroupsConfig = [
     { name: "一键代理", proxies: basePG, icon: "Rocket.png" },
     { name: "ChatGPT", proxies: baseOP, icon: "ChatGPT.png" },
     { name: "Claude", proxies: baseOP, icon: "Claude.png" },
@@ -279,21 +277,23 @@ function main(config) {
     { name: "国内直连", proxies: ["DIRECT"], hidden: true, icon: "China.png" }
   ];
 
-  const serviceGroups = serviceGroupsConfig.map(g => ({
-    name: g.name,
-    type: "select",
-    proxies: g.proxies,
-    hidden: !!g.hidden,
-    icon: `https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/${g.icon}`
-  }));
+  var serviceGroups = serviceGroupsConfig.map(function(g) {
+    return {
+      name: g.name,
+      type: "select",
+      proxies: g.proxies,
+      hidden: !!g.hidden,
+      icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/" + g.icon
+    };
+  });
 
-  config["proxy-groups"] = [...serviceGroups, ...dynamicGroups];
+  config["proxy-groups"] = serviceGroups.concat(dynamicGroups);
 
   // ================================================================
   // 8. 规则提供者 (Rule Providers) - 纯 MRS 引擎
   // ================================================================
-  const mkMrsDomain = (url) => ({ type: "http", interval: 86400, behavior: "domain", format: "mrs", url });
-  const mkMrsIp = (url) => ({ type: "http", interval: 86400, behavior: "ipcidr", format: "mrs", url });
+  var mkMrsDomain = function(url) { return { type: "http", interval: 86400, behavior: "domain", format: "mrs", url: url }; };
+  var mkMrsIp = function(url) { return { type: "http", interval: 86400, behavior: "ipcidr", format: "mrs", url: url }; };
 
   config["rule-providers"] = {
     "private_domain": mkMrsDomain("https://gh-proxy.org/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.mrs"),
@@ -330,7 +330,7 @@ function main(config) {
   };
 
   // ================================================================
-  // 9. 路由匹配规则 (Rules)
+  // 9. 路由规则匹配
   // ================================================================
   config["rules"] = [
     "RULE-SET,private_domain,DIRECT",
