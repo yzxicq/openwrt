@@ -19,35 +19,43 @@ function main(config) {
   };
 
   // ================================================================
-  // 2. 节点过滤与参数校验修复 (修复 invalid REALITY short ID)
+  // 2. 深度清洗与修复节点列表 (彻底阻断 invalid REALITY short ID)
   // ================================================================
   const rawProxies = Array.isArray(config["proxies"]) ? config["proxies"] : [];
-  const validProxies = [];
+  const safeProxies = [];
   const proxyNames = [];
 
-  rawProxies.forEach(p => {
-    if (!p || !p.name) return;
-    // 过滤机场提示与广告节点
-    if (/到期|过期|剩余|网址|官网|邮箱|订阅|套餐|流量|说明|重置/i.test(p.name)) return;
+  rawProxies.forEach((p, idx) => {
+    if (!p || !p.name || typeof p.name !== "string") return;
 
-    // 针对 Reality 节点的 short-id 校验修复
-    if (p.type === "vless" && p["reality-opts"]) {
-      const shortId = p["reality-opts"]["short-id"];
-      // 如果 short-id 存在但不是合法的偶数位十六进制，重置为空字符以通过内核校验
-      if (shortId !== undefined && (typeof shortId !== "string" || !/^[0-9a-fA-F]*$/.test(shortId) || shortId.length % 2 !== 0)) {
-        p["reality-opts"]["short-id"] = "";
+    // 过滤废弃与广告节点
+    if (/到期|过期|剩余|网址|官网|邮箱|订阅|套餐|流量|说明|重置/i.test(p.name)) {
+      return;
+    }
+
+    // 深度排查 Reality 配置缺陷 (兼容 short-id 与 shortId)
+    const reality = p["reality-opts"] || p["reality_opts"];
+    if (reality) {
+      const sidKey = ("short-id" in reality) ? "short-id" : ("shortId" in reality ? "shortId" : null);
+      if (sidKey) {
+        const sid = String(reality[sidKey] || "").trim();
+        // 必须为合法的偶数位16进制；若不是，直接删除该键，由内核使用默认逻辑
+        const isValidHex = /^[0-9a-fA-F]*$/.test(sid) && sid.length % 2 === 0;
+        if (!isValidHex) {
+          delete reality[sidKey];
+        }
       }
     }
 
-    validProxies.push(p);
+    safeProxies.push(p);
     proxyNames.push(p.name);
   });
 
-  // 更新修复后的节点列表
-  config["proxies"] = validProxies;
+  // 回写干净的节点池
+  config["proxies"] = safeProxies;
 
   // ================================================================
-  // 3. TUN 虚拟网卡配置 (移动端核心模式)
+  // 3. TUN 虚拟网卡配置 (移动端标准配置)
   // ================================================================
   config["tun"] = {
     "enable": true,
@@ -113,7 +121,6 @@ function main(config) {
   config["dns"] = {
     "enable": true,
     "ipv6": true,
-    "listen": "0.0.0.0:7874",
     "enhanced-mode": "fake-ip",
     "fake-ip-range": "198.18.0.1/16",
     "fake-ip-filter-mode": "blacklist",
