@@ -150,16 +150,17 @@ function main(config) {
 
   const filterNodes = (reg) => proxyNames.filter(name => reg.test(name));
 
+  // 此处已全面修正为 JS 标准正则（末尾加 /i 标志）
   const regionConfigs = [
-    { key: "香港", reg: /(?i)(香港|(?<![a-zA-Z])(hk|hkg)(?![a-zA-Z])|hongkong|hong kong|🇭🇰)/, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/HK.png" },
-    { key: "台湾", reg: /(?i)(台湾|台灣|(?<![a-zA-Z])(tw|tpe|khh|tsa)(?![a-zA-Z])|taiwan|taipei|🇹🇼)/, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/TW.png" },
-    { key: "日本", reg: /(?i)(日本|(?<![a-zA-Z])(jp|nrt|hnd|kix|cts|fuk)(?![a-zA-Z])|japan|tokyo|🇯🇵)/, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/JP.png" },
-    { key: "新加坡", reg: /(?i)(新加坡|(?<![a-zA-Z])(sg|sin|xsp)(?![a-zA-Z])|singapore|🇸🇬)/, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/SG.png" },
-    { key: "韩国", reg: /(?i)(韩国|韓國|(?<![a-zA-Z])(kr|icn|gmp|pus)(?![a-zA-Z])|korea|seoul|🇰🇷)/, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/KR.png" },
-    { key: "美国", reg: /(?i)(美国|美國|(?<![a-zA-Z])(us|usa|lax|sfo|jfk|sjc)(?![a-zA-Z])|america|united states|🇺🇸)/, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/US.png" },
-    { key: "欧洲", reg: /^(?i)(?=.*(奥地利|奥地利共和国|比利时|保加利亚|克罗地亚|塞浦路斯|捷克|丹麦|爱沙尼亚|芬兰|法国|德国|希腊|匈牙利|爱尔兰|意大利|拉脱维亚|立陶宛|卢森堡|荷兰|波兰|葡萄牙|罗马尼亚|斯洛伐克|斯洛文尼亚|西班牙|瑞典|英国|🇧🇪|🇨🇿|🇩🇰|🇫🇮|🇫🇷|🇩🇪|🇮🇪|🇮🇹|🇱🇹|🇱🇺|🇳🇱|🇵🇱|🇸🇪|🇬🇧|CDG|FRA|AMS|MAD|BCN|FCO|MUC|BRU)).*$/, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/EU.png" },
-    { key: "歇斯底里", reg: /(?i)(hy|HY)/, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/OT.png" },
-    { key: "Reality", reg: /(?i)(vless|VLESS|Reality|reality|VL|vl)/, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/OT.png" }
+    { key: "香港", reg: /(香港|hk|hkg|hongkong|hong\s*kong|🇭🇰)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/HK.png" },
+    { key: "台湾", reg: /(台湾|台灣|tw|tpe|khh|tsa|taiwan|taipei|🇹🇼)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/TW.png" },
+    { key: "日本", reg: /(日本|jp|nrt|hnd|kix|cts|fuk|japan|tokyo|🇯🇵)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/JP.png" },
+    { key: "新加坡", reg: /(新加坡|sg|sin|xsp|singapore|🇸🇬)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/SG.png" },
+    { key: "韩国", reg: /(韩国|韓國|kr|icn|gmp|pus|korea|seoul|🇰🇷)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/KR.png" },
+    { key: "美国", reg: /(美国|美國|us|usa|lax|sfo|jfk|sjc|america|united\s*states|🇺🇸)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/US.png" },
+    { key: "欧洲", reg: /(奥地利|奥地利共和国|比利时|保加利亚|克罗地亚|塞浦路斯|捷克|丹麦|爱沙尼亚|芬兰|法国|德国|希腊|匈牙利|爱尔兰|意大利|拉脱维亚|立陶宛|卢森堡|荷兰|波兰|葡萄牙|罗马尼亚|斯洛伐克|斯洛文尼亚|西班牙|瑞典|英国|🇧🇪|🇨🇿|🇩🇰|🇫🇮|🇫🇷|🇩🇪|🇮🇪|🇮🇹|🇱🇹|🇱🇺|🇳🇱|🇵🇱|🇸🇪|🇬🇧|CDG|FRA|AMS|MAD|BCN|FCO|MUC|BRU)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/EU.png" },
+    { key: "歇斯底里", reg: /(hy|HY)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/OT.png" },
+    { key: "Reality", reg: /(vless|reality|VL)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/OT.png" }
   ];
 
   const dynamicGroups = [];
@@ -193,7 +194,6 @@ function main(config) {
       icon: item.icon
     });
 
-    // 歇斯底里与 Reality 无故转组，仅地区组生成故转
     if (item.key !== "歇斯底里" && item.key !== "Reality") {
       dynamicGroups.push({
         name: fName,
@@ -212,7 +212,7 @@ function main(config) {
   });
 
   // 补充“其他-手动”
-  const otherRegex = /^(?!.*(DIRECT|直接连接|香港|台湾|台灣|日本|韩国|韓國|新加坡|美国|美國|奥地利|比利时|保加利亚|克罗地亚|塞浦路斯|捷克|丹麦|爱沙尼亚|芬兰|法国|德国|希腊|匈牙利|爱尔兰|意大利|拉脱维亚|立陶宛|卢森堡|荷兰|波兰|葡萄牙|罗马尼亚|斯洛伐克|斯洛文尼亚|西班牙|瑞典|英国|🇭🇰|🇹🇼|🇸🇬|🇯🇵|🇰🇷|🇺🇸|🇬🇧|HK|TW|SG|JP|KR|US|GB|CDG|FRA|AMS|MAD|BCN|FCO|MUC|BRU|HKG|TPE|TSA|KHH|SIN|XSP|NRT|HND|KIX|CTS|FUK|JFK|LAX|ORD|ATL|DFW|SFO|MIA|SEA|IAD|LHR|LGW)).*$/;
+  const otherRegex = /^(?!.*(DIRECT|直接连接|香港|台湾|台灣|日本|韩国|韓國|新加坡|美国|美國|奥地利|比利时|保加利亚|克罗地亚|塞浦路斯|捷克|丹麦|爱沙尼亚|芬兰|法国|德国|希腊|匈牙利|爱尔兰|意大利|拉脱维亚|立陶宛|卢森堡|荷兰|波兰|葡萄牙|罗马尼亚|斯洛伐克|斯洛文尼亚|西班牙|瑞典|英国|🇭🇰|🇹🇼|🇸🇬|🇯🇵|🇰🇷|🇺🇸|🇬🇧|HK|TW|SG|JP|KR|US|GB|CDG|FRA|AMS|MAD|BCN|FCO|MUC|BRU|HKG|TPE|TSA|KHH|SIN|XSP|NRT|HND|KIX|CTS|FUK|JFK|LAX|ORD|ATL|DFW|SFO|MIA|SEA|IAD|LHR|LGW)).*$/i;
   let otherMatched = filterNodes(otherRegex);
   if (otherMatched.length === 0) otherMatched = ["DIRECT"];
   dynamicGroups.push({
