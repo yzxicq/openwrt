@@ -3,7 +3,7 @@ function main(config) {
   // 1. 基础配置与网络协议
   // ================================================================
   config["mode"] = "rule";
-  config["ipv6"] = false; // 移动端建议关闭 IPv6，避免短视频优先尝试 IPv6 代理连接超时卡顿
+  config["ipv6"] = true;
   config["mixed-port"] = 7890;
   config["allow-lan"] = true;
   config["bind-address"] = "*";
@@ -19,60 +19,57 @@ function main(config) {
   };
 
   // ================================================================
-  // 2. 原地深度兼容修复 (就地修复底层参数，不动原始 proxies 引用结构)
+  // 2. 深度清洗与修复节点列表 (彻底阻断 invalid REALITY short ID)
   // ================================================================
-  var originalProxies = Array.isArray(config["proxies"]) ? config["proxies"] : [];
-  var proxyNames = [];
+  const rawProxies = Array.isArray(config["proxies"]) ? config["proxies"] : [];
+  const safeProxies = [];
+  const proxyNames = [];
 
-  originalProxies.forEach(function(p) {
+  rawProxies.forEach((p, idx) => {
     if (!p || !p.name || typeof p.name !== "string") return;
 
-    // 过滤失效与广告节点
+    // 过滤废弃与广告节点
     if (/到期|过期|剩余|网址|官网|邮箱|订阅|套餐|流量|说明|重置/i.test(p.name)) {
       return;
     }
 
-    // 就地兼容 Reality 协议：自动修正不规范的 short-id 为合法偶数位 Hex
-    var ro = p["reality-opts"] || p["reality_opts"];
-    if (ro) {
-      var sidKey = ("short-id" in ro) ? "short-id" : ("shortId" in ro ? "shortId" : null);
-      if (sidKey && ro[sidKey] !== undefined && ro[sidKey] !== null) {
-        var sid = String(ro[sidKey]).trim().replace(/[^0-9a-fA-F]/g, "");
-        if (sid.length > 0 && sid.length % 2 !== 0) {
-          sid = "0" + sid; // 奇数位自动补 0 变标准偶数位
+    // 深度排查 Reality 配置缺陷 (兼容 short-id 与 shortId)
+    const reality = p["reality-opts"] || p["reality_opts"];
+    if (reality) {
+      const sidKey = ("short-id" in reality) ? "short-id" : ("shortId" in reality ? "shortId" : null);
+      if (sidKey) {
+        const sid = String(reality[sidKey] || "").trim();
+        // 必须为合法的偶数位16进制；若不是，直接删除该键，由内核使用默认逻辑
+        const isValidHex = /^[0-9a-fA-F]*$/.test(sid) && sid.length % 2 === 0;
+        if (!isValidHex) {
+          delete reality[sidKey];
         }
-        ro[sidKey] = sid;
       }
     }
 
+    safeProxies.push(p);
     proxyNames.push(p.name);
   });
 
-// ================================================================
-  // 3. 跨平台自适应 TUN (Windows 免 UAC 提权，安卓唤起 VPN 钥匙)
-  // ================================================================
-  // 嗅探当前平台环境（利用客户端内建全局变量或进程特征）
-  var isWindows = (typeof process !== "undefined" && process.platform === "win32") ||
-                  (typeof navigator !== "undefined" && /win/i.test(navigator.platform));
+  // 回写干净的节点池
+  config["proxies"] = safeProxies;
 
-  if (!isWindows) {
-    // 安卓 / 移动端：注入 TUN 配置，唤起安卓 VpnService 钥匙图标
-    config["tun"] = {
-      "enable": true,
-      "stack": "mixed",
-      "dns-hijack": ["udp://any:53", "tcp://any:53"],
-      "auto-detect-interface": true,
-      "auto-route": true,
-      "auto-redirect": false,
-      "strict-route": false,
-      "endpoint-independent-nat": true
-    };
-  } else {
-    // Windows 端：彻底移除 TUN，退回标准系统代理，普通域用户启动完全无需管理员密码
-    delete config["tun"];
-  }
   // ================================================================
-  // 4. 嗅探功能 (增加国内短视频大厂跳过，降低高并发流媒体切片延迟)
+  // 3. TUN 虚拟网卡配置 (移动端标准配置)
+  // ================================================================
+  config["tun"] = {
+    "enable": true,
+    "stack": "mixed",
+    "dns-hijack": ["udp://any:53", "tcp://any:53"],
+    "auto-detect-interface": true,
+    "auto-route": true,
+    "auto-redirect": false,
+    "strict-route": false,
+    "endpoint-independent-nat": true
+  };
+
+  // ================================================================
+  // 4. 流量嗅探 (Sniffer)
   // ================================================================
   config["sniffer"] = {
     "enable": true,
@@ -94,13 +91,6 @@ function main(config) {
     "skip-domain": [
       "+.cwac.cc",
       "+.doppelmayr.cn",
-      "+.qq.com",
-      "+.tencent.com",
-      "+.qpic.cn",
-      "+.bytedance.com",
-      "+.pstatp.com",
-      "+.snssdk.com",
-      "+.zijieapi.com",
       "dlg.io.mi.com",
       "+.mi.com",
       "+.xiaomi.com",
@@ -130,11 +120,11 @@ function main(config) {
   // ================================================================
   config["dns"] = {
     "enable": true,
-    "ipv6": false, // 联动关闭 IPv6 DNS 解析
+    "ipv6": true,
     "enhanced-mode": "fake-ip",
     "fake-ip-range": "198.18.0.1/16",
     "fake-ip-filter-mode": "blacklist",
-    "respect-rules": false, // 关闭此项，防止复杂规则匹配时因等待真实 DNS 回落误入兜底代理
+    "respect-rules": true,
     "cache-algorithm": "arc",
     "fake-ip-filter": [
       "rule-set:applecn_domain",
@@ -183,15 +173,11 @@ function main(config) {
   };
 
   // ================================================================
-  // 7. 策略组构建
+  // 7. 区域匹配与构建策略组
   // ================================================================
-  var filterNodes = function(reg) {
-    return proxyNames.filter(function(name) {
-      return reg.test(name);
-    });
-  };
+  const filterNodes = (reg) => proxyNames.filter(name => reg.test(name));
 
-  var regionConfigs = [
+  const regionConfigs = [
     { key: "香港", reg: /(香港|hk|hkg|hongkong|hong\s*kong|🇭🇰)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/HK.png" },
     { key: "台湾", reg: /(台湾|台灣|tw|tpe|khh|tsa|taiwan|taipei|🇹🇼)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/TW.png" },
     { key: "日本", reg: /(日本|jp|nrt|hnd|kix|cts|fuk|japan|tokyo|🇯🇵)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/JP.png" },
@@ -203,18 +189,18 @@ function main(config) {
     { key: "Reality", reg: /(vless|reality|VL)/i, icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/OT.png" }
   ];
 
-  var dynamicGroups = [];
-  var fallbackList = [];
-  var autoList = [];
-  var manualList = [];
+  const dynamicGroups = [];
+  const fallbackList = [];
+  const autoList = [];
+  const manualList = [];
 
-  regionConfigs.forEach(function(item) {
-    var matched = filterNodes(item.reg);
+  regionConfigs.forEach(item => {
+    let matched = filterNodes(item.reg);
     if (matched.length === 0) matched = ["DIRECT"];
 
-    var mName = item.key + "-手动";
-    var aName = item.key + "-自动";
-    var fName = item.key + "-故转";
+    const mName = `${item.key}-手动`;
+    const aName = `${item.key}-自动`;
+    const fName = `${item.key}-故转`;
 
     dynamicGroups.push({
       name: mName,
@@ -252,8 +238,8 @@ function main(config) {
   });
 
   // 补充“其他-手动”
-  var otherRegex = /^(?!.*(DIRECT|直接连接|香港|台湾|台灣|日本|韩国|韓國|新加坡|美国|美國|奥地利|比利时|保加利亚|克罗地亚|塞浦路斯|捷克|丹麦|爱沙尼亚|芬兰|法国|德国|希腊|匈牙利|爱尔兰|意大利|拉脱维亚|立陶宛|卢森堡|荷兰|波兰|葡萄牙|罗马尼亚|斯洛伐克|斯洛文尼亚|西班牙|瑞典|英国|🇭🇰|🇹🇼|🇸🇬|🇯🇵|🇰🇷|🇺🇸|🇬🇧|HK|TW|SG|JP|KR|US|GB|CDG|FRA|AMS|MAD|BCN|FCO|MUC|BRU|HKG|TPE|TSA|KHH|SIN|XSP|NRT|HND|KIX|CTS|FUK|JFK|LAX|ORD|ATL|DFW|SFO|MIA|SEA|IAD|LHR|LGW)).*$/i;
-  var otherMatched = filterNodes(otherRegex);
+  const otherRegex = /^(?!.*(DIRECT|直接连接|香港|台湾|台灣|日本|韩国|韓國|新加坡|美国|美國|奥地利|比利时|保加利亚|克罗地亚|塞浦路斯|捷克|丹麦|爱沙尼亚|芬兰|法国|德国|希腊|匈牙利|爱尔兰|意大利|拉脱维亚|立陶宛|卢森堡|荷兰|波兰|葡萄牙|罗马尼亚|斯洛伐克|斯洛文尼亚|西班牙|瑞典|英国|🇭🇰|🇹🇼|🇸🇬|🇯🇵|🇰🇷|🇺🇸|🇬🇧|HK|TW|SG|JP|KR|US|GB|CDG|FRA|AMS|MAD|BCN|FCO|MUC|BRU|HKG|TPE|TSA|KHH|SIN|XSP|NRT|HND|KIX|CTS|FUK|JFK|LAX|ORD|ATL|DFW|SFO|MIA|SEA|IAD|LHR|LGW)).*$/i;
+  let otherMatched = filterNodes(otherRegex);
   if (otherMatched.length === 0) otherMatched = ["DIRECT"];
   dynamicGroups.push({
     name: "其他-手动",
@@ -264,12 +250,12 @@ function main(config) {
   manualList.push("其他-手动");
 
   // 出站基础锚点 proxies
-  var basePG = fallbackList.concat(autoList).concat(manualList).concat(["DIRECT"]);
-  var baseOP = ["一键代理"].concat(basePG);
-  var baseLD = ["DIRECT", "一键代理"].concat(basePG.filter(function(x) { return x !== "DIRECT"; }));
+  const basePG = [...fallbackList, ...autoList, ...manualList, "DIRECT"];
+  const baseOP = ["一键代理", ...basePG];
+  const baseLD = ["DIRECT", "一键代理", ...basePG.filter(p => p !== "DIRECT")];
 
   // 业务服务组
-  var serviceGroupsConfig = [
+  const serviceGroupsConfig = [
     { name: "一键代理", proxies: basePG, icon: "Rocket.png" },
     { name: "ChatGPT", proxies: baseOP, icon: "ChatGPT.png" },
     { name: "Claude", proxies: baseOP, icon: "Claude.png" },
@@ -293,23 +279,21 @@ function main(config) {
     { name: "国内直连", proxies: ["DIRECT"], hidden: true, icon: "China.png" }
   ];
 
-  var serviceGroups = serviceGroupsConfig.map(function(g) {
-    return {
-      name: g.name,
-      type: "select",
-      proxies: g.proxies,
-      hidden: !!g.hidden,
-      icon: "https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/" + g.icon
-    };
-  });
+  const serviceGroups = serviceGroupsConfig.map(g => ({
+    name: g.name,
+    type: "select",
+    proxies: g.proxies,
+    hidden: !!g.hidden,
+    icon: `https://gh-proxy.org/https://github.com/Seven1echo/Yaml/raw/main/icons/${g.icon}`
+  }));
 
-  config["proxy-groups"] = serviceGroups.concat(dynamicGroups);
+  config["proxy-groups"] = [...serviceGroups, ...dynamicGroups];
 
   // ================================================================
   // 8. 规则提供者 (Rule Providers) - 纯 MRS 引擎
   // ================================================================
-  var mkMrsDomain = function(url) { return { type: "http", interval: 86400, behavior: "domain", format: "mrs", url: url }; };
-  var mkMrsIp = function(url) { return { type: "http", interval: 86400, behavior: "ipcidr", format: "mrs", url: url }; };
+  const mkMrsDomain = (url) => ({ type: "http", interval: 86400, behavior: "domain", format: "mrs", url });
+  const mkMrsIp = (url) => ({ type: "http", interval: 86400, behavior: "ipcidr", format: "mrs", url });
 
   config["rule-providers"] = {
     "private_domain": mkMrsDomain("https://gh-proxy.org/https://raw.githubusercontent.com/MetaCubeX/meta-rules-dat/meta/geo/geosite/private.mrs"),
@@ -346,10 +330,9 @@ function main(config) {
   };
 
   // ================================================================
-  // 9. 路由规则匹配 (前置短视频与核心大厂直连保护)
+  // 9. 路由匹配规则 (Rules)
   // ================================================================
   config["rules"] = [
-    // 局域网与公司/私有服务直连保护
     "RULE-SET,private_domain,DIRECT",
     "RULE-SET,private_ip,DIRECT,no-resolve",
     "IP-CIDR6,::1/128,DIRECT,no-resolve",
@@ -362,28 +345,7 @@ function main(config) {
     "IP-CIDR6,fe80::/10,DIRECT,no-resolve",
     "DOMAIN-SUFFIX,cwac.cc,DIRECT",
     "DOMAIN-SUFFIX,doppelmayr.cn,DIRECT",
-
-    // 【新增短视频及大厂直连规则，解决微信视频号与红果/抖音短剧卡顿、断流】
-    "DOMAIN-KEYWORD,weixin,DIRECT",
-    "DOMAIN-KEYWORD,qpic,DIRECT",
-    "DOMAIN-KEYWORD,qlogo,DIRECT",
-    "DOMAIN-SUFFIX,qq.com,DIRECT",
-    "DOMAIN-SUFFIX,tencent.com,DIRECT",
-    "DOMAIN-SUFFIX,byteoversea.com,DIRECT",
-    "DOMAIN-SUFFIX,pstatp.com,DIRECT",
-    "DOMAIN-SUFFIX,snssdk.com,DIRECT",
-    "DOMAIN-SUFFIX,toutiao.com,DIRECT",
-    "DOMAIN-SUFFIX,bytedance.com,DIRECT",
-    "DOMAIN-SUFFIX,zijieapi.com,DIRECT",
-    "DOMAIN-SUFFIX,volccdn.com,DIRECT",
-    "DOMAIN-KEYWORD,zijie,DIRECT",
-    "DOMAIN-KEYWORD,toutiaovod,DIRECT",
-    "DOMAIN-KEYWORD,bytedns,DIRECT",
-
-    // 海外 UDP/QUIC 阻断（防止 YouTube/Google 降速）
     "AND,((RULE-SET,geolocation-!cn),(DST-PORT,443),(NETWORK,UDP)),REJECT",
-
-    // 业务指定分组
     "RULE-SET,openai_domain,ChatGPT",
     "RULE-SET,anthropic_domain,Claude",
     "RULE-SET,google-gemini_domain,Gemini",
@@ -409,8 +371,6 @@ function main(config) {
     "RULE-SET,telegram_ip,Telegram,no-resolve",
     "RULE-SET,twitter_ip,Twitter(X),no-resolve",
     "RULE-SET,netflix_ip,Netflix,no-resolve",
-
-    // 排除国内分流与常规国内放行
     "RULE-SET,geolocation-!cn,一键代理",
     "RULE-SET,add_direct_domain,DIRECT",
     "RULE-SET,cn_domain,DIRECT",
