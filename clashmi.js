@@ -3,7 +3,7 @@ function main(config) {
   // 1. 基础配置与网络协议
   // ================================================================
   config["mode"] = "rule";
-  config["ipv6"] = true;
+  config["ipv6"] = false; // 移动端建议关闭 IPv6，避免短视频优先尝试 IPv6 代理连接超时卡顿
   config["mixed-port"] = 7890;
   config["allow-lan"] = true;
   config["bind-address"] = "*";
@@ -63,7 +63,7 @@ function main(config) {
   };
 
   // ================================================================
-  // 4. 嗅探功能 (包含你的 cwac.cc 与 doppelmayr.cn 豁免)
+  // 4. 嗅探功能 (增加国内短视频大厂跳过，降低高并发流媒体切片延迟)
   // ================================================================
   config["sniffer"] = {
     "enable": true,
@@ -85,6 +85,13 @@ function main(config) {
     "skip-domain": [
       "+.cwac.cc",
       "+.doppelmayr.cn",
+      "+.qq.com",
+      "+.tencent.com",
+      "+.qpic.cn",
+      "+.bytedance.com",
+      "+.pstatp.com",
+      "+.snssdk.com",
+      "+.zijieapi.com",
       "dlg.io.mi.com",
       "+.mi.com",
       "+.xiaomi.com",
@@ -110,15 +117,15 @@ function main(config) {
   };
 
   // ================================================================
-  // 6. DNS 防泄漏与内外网分流 (含公司内网与家庭自建)
+  // 6. DNS 防泄漏与内外网分流
   // ================================================================
   config["dns"] = {
     "enable": true,
-    "ipv6": true,
+    "ipv6": false, // 联动关闭 IPv6 DNS 解析
     "enhanced-mode": "fake-ip",
     "fake-ip-range": "198.18.0.1/16",
     "fake-ip-filter-mode": "blacklist",
-    "respect-rules": true,
+    "respect-rules": false, // 关闭此项，防止复杂规则匹配时因等待真实 DNS 回落误入兜底代理
     "cache-algorithm": "arc",
     "fake-ip-filter": [
       "rule-set:applecn_domain",
@@ -167,7 +174,7 @@ function main(config) {
   };
 
   // ================================================================
-  // 7. 策略组构建 (对标你的锚点架构)
+  // 7. 策略组构建
   // ================================================================
   var filterNodes = function(reg) {
     return proxyNames.filter(function(name) {
@@ -330,9 +337,10 @@ function main(config) {
   };
 
   // ================================================================
-  // 9. 路由规则匹配
+  // 9. 路由规则匹配 (前置短视频与核心大厂直连保护)
   // ================================================================
   config["rules"] = [
+    // 局域网与公司/私有服务直连保护
     "RULE-SET,private_domain,DIRECT",
     "RULE-SET,private_ip,DIRECT,no-resolve",
     "IP-CIDR6,::1/128,DIRECT,no-resolve",
@@ -345,7 +353,28 @@ function main(config) {
     "IP-CIDR6,fe80::/10,DIRECT,no-resolve",
     "DOMAIN-SUFFIX,cwac.cc,DIRECT",
     "DOMAIN-SUFFIX,doppelmayr.cn,DIRECT",
+
+    // 【新增短视频及大厂直连规则，解决微信视频号与红果/抖音短剧卡顿、断流】
+    "DOMAIN-KEYWORD,weixin,DIRECT",
+    "DOMAIN-KEYWORD,qpic,DIRECT",
+    "DOMAIN-KEYWORD,qlogo,DIRECT",
+    "DOMAIN-SUFFIX,qq.com,DIRECT",
+    "DOMAIN-SUFFIX,tencent.com,DIRECT",
+    "DOMAIN-SUFFIX,byteoversea.com,DIRECT",
+    "DOMAIN-SUFFIX,pstatp.com,DIRECT",
+    "DOMAIN-SUFFIX,snssdk.com,DIRECT",
+    "DOMAIN-SUFFIX,toutiao.com,DIRECT",
+    "DOMAIN-SUFFIX,bytedance.com,DIRECT",
+    "DOMAIN-SUFFIX,zijieapi.com,DIRECT",
+    "DOMAIN-SUFFIX,volccdn.com,DIRECT",
+    "DOMAIN-KEYWORD,zijie,DIRECT",
+    "DOMAIN-KEYWORD,toutiaovod,DIRECT",
+    "DOMAIN-KEYWORD,bytedns,DIRECT",
+
+    // 海外 UDP/QUIC 阻断（防止 YouTube/Google 降速）
     "AND,((RULE-SET,geolocation-!cn),(DST-PORT,443),(NETWORK,UDP)),REJECT",
+
+    // 业务指定分组
     "RULE-SET,openai_domain,ChatGPT",
     "RULE-SET,anthropic_domain,Claude",
     "RULE-SET,google-gemini_domain,Gemini",
@@ -371,6 +400,8 @@ function main(config) {
     "RULE-SET,telegram_ip,Telegram,no-resolve",
     "RULE-SET,twitter_ip,Twitter(X),no-resolve",
     "RULE-SET,netflix_ip,Netflix,no-resolve",
+
+    // 排除国内分流与常规国内放行
     "RULE-SET,geolocation-!cn,一键代理",
     "RULE-SET,add_direct_domain,DIRECT",
     "RULE-SET,cn_domain,DIRECT",
