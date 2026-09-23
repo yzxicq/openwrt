@@ -48,21 +48,29 @@ function main(config) {
     proxyNames.push(p.name);
   });
 
+// ================================================================
+  // 3. 跨平台自适应 TUN (Windows 免 UAC 提权，安卓唤起 VPN 钥匙)
   // ================================================================
-  // 3. TUN 虚拟网卡配置
-  // ================================================================
-  /*
-  config["tun"] = {
-    "enable": true,
-    "stack": "mixed",
-    "dns-hijack": ["udp://any:53", "tcp://any:53"],
-    "auto-detect-interface": true,
-    "auto-route": true,
-    "auto-redirect": false,
-    "strict-route": false,
-    "endpoint-independent-nat": true
-  };
-*/
+  // 嗅探当前平台环境（利用客户端内建全局变量或进程特征）
+  var isWindows = (typeof process !== "undefined" && process.platform === "win32") ||
+                  (typeof navigator !== "undefined" && /win/i.test(navigator.platform));
+
+  if (!isWindows) {
+    // 安卓 / 移动端：注入 TUN 配置，唤起安卓 VpnService 钥匙图标
+    config["tun"] = {
+      "enable": true,
+      "stack": "mixed",
+      "dns-hijack": ["udp://any:53", "tcp://any:53"],
+      "auto-detect-interface": true,
+      "auto-route": true,
+      "auto-redirect": false,
+      "strict-route": false,
+      "endpoint-independent-nat": true
+    };
+  } else {
+    // Windows 端：彻底移除 TUN，退回标准系统代理，普通域用户启动完全无需管理员密码
+    delete config["tun"];
+  }
   // ================================================================
   // 4. 嗅探功能 (增加国内短视频大厂跳过，降低高并发流媒体切片延迟)
   // ================================================================
