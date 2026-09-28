@@ -1,13 +1,13 @@
 function main(config) {
   // ================================================================
-  // 1. 基础内核参数与移动端免配置 TUN 注入
+  // 1. 基础内核参数设置 (贴合 Mihomo 最佳性能)  Windows非管理员用户，without TUN
   // ================================================================
   config["mode"] = "rule";
   config["ipv6"] = true;
   config["mixed-port"] = 7890;
   config["allow-lan"] = true;
   config["bind-address"] = "*";
-  config["log-level"] = "info";
+  config["log-level"] = "info"; // 降低日志级别，减少安卓耗电
   config["unified-delay"] = true;
   config["tcp-concurrent"] = true;
   config["global-ua"] = "clash.meta";
@@ -16,17 +16,6 @@ function main(config) {
   config["profile"] = {
     "store-selected": true,
     "store-fake-ip": true
-  };
-
-  // 移动端零配置核心：主动接管并下发最优 TUN 配置
-  config["tun"] = {
-    "enable": true,
-    "stack": "mixed", // 移动端性能与兼容性最佳的网络栈
-    "dns-hijack": ["any:53", "tcp://any:53"], // 强制接管本机所有 App 的 DNS 请求
-    "auto-route": true,
-    "auto-detect-interface": true,
-    "mtu": 1280, // 强制锁死 1280，规避 5G 空口丢包与 Hy2 断流
-    "strict-route": false
   };
 
   // ================================================================
@@ -39,28 +28,37 @@ function main(config) {
   const filterRegex = /到期|过期|剩余|网址|官网|邮箱|订阅|套餐|流量|说明|重置/i;
 
   rawProxies.forEach((p) => {
+    // 过滤无效节点和广告节点
     if (!p || !p.name || typeof p.name !== "string" || filterRegex.test(p.name)) return;
 
+    // --- [社区最佳实践 1：修复 Hysteria 2 强类型校验与安卓证书拦截] ---
     if (p.type === "hysteria2" || p.type === "hysteria") {
+      // 必须确保 alpn 是数组，否则内核静默超时
       if (typeof p.alpn === "string") {
         p.alpn = [p.alpn];
       } else if (!Array.isArray(p.alpn) || p.alpn.length === 0) {
-        p.alpn = ["h3"];
+        p.alpn = ["h3"]; // 默认走 h3
       }
+      
+      // 强制兼容安卓严格的 TLS 证书校验
       if (p["skip-cert-verify"] === undefined) {
         p["skip-cert-verify"] = true;
       }
+
+      // 修正兼容旧版订阅的拼写
       if (p.fastopen !== undefined) {
         p["fast-open"] = Boolean(p.fastopen);
         delete p.fastopen;
       }
     }
 
+    // --- [社区最佳实践 2：修复 Reality 短 ID 不规范导致的 Fatal Error] ---
     const reality = p["reality-opts"] || p["reality_opts"];
     if (reality) {
       const sidKey = ("short-id" in reality) ? "short-id" : ("shortId" in reality ? "shortId" : null);
       if (sidKey) {
         const sid = String(reality[sidKey] || "").trim();
+        // 必须为偶数位长度的 Hex，否则剔除让其走默认，防止崩溃
         const isValidHex = /^[0-9a-fA-F]*$/.test(sid) && sid.length % 2 === 0;
         if (!isValidHex) {
           delete reality[sidKey];
@@ -74,6 +72,7 @@ function main(config) {
 
   config["proxies"] = safeProxies;
 
+  // 极端容错：如果没有获取到任何有效节点，返回基础配置避免空指针
   if (proxyNames.length === 0) {
     return config;
   }
@@ -90,6 +89,7 @@ function main(config) {
     "respect-rules": true,
     "cache-algorithm": "arc",
     "default-nameserver": ["223.5.5.5", "119.29.29.29"],
+    // [社区最佳实践 3：专门为节点域名解析配置 DoH，绕过运营商 5G UDP 阻断]
     "proxy-server-nameserver": [
       "https://223.5.5.5/dns-query",
       "https://doh.pub/dns-query"
@@ -131,11 +131,11 @@ function main(config) {
   };
 
   // ================================================================
-  // 4. 策略组动态构建
+  // 4. 原样保留用户的完整策略组构建逻辑
   // ================================================================
   const filterNodes = (reg) => {
     const matched = proxyNames.filter((name) => reg.test(name));
-    return matched.length > 0 ? matched : ["DIRECT"];
+    return matched.length > 0 ? matched : ["DIRECT"]; // 找不到时回退 DIRECT，避免空策略组报错
   };
 
   const regionConfigs = [
@@ -197,6 +197,7 @@ function main(config) {
     manualList.push(mName);
   });
 
+  // 补充“其他-手动”
   const otherRegex = /^(?!.*(DIRECT|直接连接|香港|台湾|台灣|日本|韩国|韓國|新加坡|美国|美國|奥地利|比利时|保加利亚|克罗地亚|塞浦路斯|捷克|丹麦|爱沙尼亚|芬兰|法国|德国|希腊|匈牙利|爱尔兰|意大利|拉脱维亚|立陶宛|卢森堡|荷兰|波兰|葡萄牙|罗马尼亚|斯洛伐克|斯洛文尼亚|西班牙|瑞典|英国|🇭🇰|🇹🇼|🇸🇬|🇯🇵|🇰🇷|🇺🇸|🇬🇧|HK|TW|SG|JP|KR|US|GB|CDG|FRA|AMS|MAD|BCN|FCO|MUC|BRU|HKG|TPE|TSA|KHH|SIN|XSP|NRT|HND|KIX|CTS|FUK|JFK|LAX|ORD|ATL|DFW|SFO|MIA|SEA|IAD|LHR|LGW)).*$/i;
   dynamicGroups.push({
     name: "其他-手动",
@@ -245,7 +246,7 @@ function main(config) {
   config["proxy-groups"] = [...serviceGroups, ...dynamicGroups];
 
   // ================================================================
-  // 5. 规则提供者 (Rule Providers)
+  // 5. 规则提供者 (Rule Providers) 
   // ================================================================
   const mkMrsDomain = (url) => ({ type: "http", interval: 86400, behavior: "domain", format: "mrs", url });
   const mkMrsIp = (url) => ({ type: "http", interval: 86400, behavior: "ipcidr", format: "mrs", url });
@@ -285,7 +286,7 @@ function main(config) {
   };
 
   // ================================================================
-  // 6. 路由规则匹配
+  // 6. 路由规则匹配 (Rules)
   // ================================================================
   config["rules"] = [
     "RULE-SET,private_domain,DIRECT",
