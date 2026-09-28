@@ -18,8 +18,8 @@ function main(config) {
     "store-fake-ip": true
   };
 
-  // ================================================================
-  // 2. 深度清洗与修复节点列表 (彻底阻断 invalid REALITY short ID)
+// ================================================================
+  // 2. 深度清洗与修复节点列表 (彻底阻断 invalid REALITY 与 Hysteria2 异常)
   // ================================================================
   const rawProxies = Array.isArray(config["proxies"]) ? config["proxies"] : [];
   const safeProxies = [];
@@ -33,13 +33,33 @@ function main(config) {
       return;
     }
 
-    // 深度排查 Reality 配置缺陷 (兼容 short-id 与 shortId)
+    // --- [新增修复] Hysteria 2 / QUIC 参数兼容修复 (解决安卓端超时) ---
+    if (p.type === "hysteria2" || p.type === "hysteria") {
+      // 1. 修复 alpn 必须为数组的问题
+      if (typeof p.alpn === "string") {
+        p.alpn = [p.alpn];
+      } else if (!p.alpn) {
+        p.alpn = ["h3"];
+      }
+
+      // 2. 解决安卓手机证书链不完整导致的握手超时
+      if (p["skip-cert-verify"] === undefined) {
+        p["skip-cert-verify"] = true;
+      }
+
+      // 3. 规范 fast-open 命名
+      if (p.fastopen !== undefined) {
+        p["fast-open"] = Boolean(p.fastopen);
+        delete p.fastopen;
+      }
+    }
+
+    // --- 深度排查 Reality 配置缺陷 (兼容 short-id 与 shortId) ---
     const reality = p["reality-opts"] || p["reality_opts"];
     if (reality) {
       const sidKey = ("short-id" in reality) ? "short-id" : ("shortId" in reality ? "shortId" : null);
       if (sidKey) {
         const sid = String(reality[sidKey] || "").trim();
-        // 必须为合法的偶数位16进制；若不是，直接删除该键，由内核使用默认逻辑
         const isValidHex = /^[0-9a-fA-F]*$/.test(sid) && sid.length % 2 === 0;
         if (!isValidHex) {
           delete reality[sidKey];
